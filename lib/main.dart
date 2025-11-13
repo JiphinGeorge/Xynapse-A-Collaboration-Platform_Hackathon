@@ -56,7 +56,7 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   int _current = 0;
 
-  final _pages =  [
+  final _pages = const [
     UserHomeScreen(),
     MyProjectsScreen(),
     CollaborationsScreen(),
