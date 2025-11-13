@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Providers
 import 'providers/project_provider.dart';
+import 'providers/theme_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
@@ -25,20 +26,35 @@ class XynapseApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ProjectProvider()..init(),
-      child: Consumer<ProjectProvider>(
-        builder: (context, provider, _) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProjectProvider()..init()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (_, themeProv, __) {
           return MaterialApp(
             title: 'Xynapse',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primarySwatch: Colors.indigo,
+            themeMode: themeProv.themeMode,
+
+            theme: ThemeData.light().copyWith(
               textTheme: GoogleFonts.poppinsTextTheme(),
             ),
-            // Route system for easier navigation
+            darkTheme: ThemeData.dark().copyWith(
+              scaffoldBackgroundColor: const Color(0xFF0D0D0D),
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+              textTheme: GoogleFonts.poppinsTextTheme(
+                ThemeData.dark().textTheme,
+              ),
+            ),
+
+            // Routing
             onGenerateRoute: AppRouter.generateRoute,
-            initialRoute: Routes.splash, // 👈 Start from SplashScreen
+            initialRoute: Routes.splash,
           );
         },
       ),
@@ -56,7 +72,7 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   int _current = 0;
 
-  final _pages =  [
+  final _pages = const [
     UserHomeScreen(),
     MyProjectsScreen(),
     CollaborationsScreen(),
@@ -72,8 +88,14 @@ class _RootScreenState extends State<RootScreen> {
         onTap: (i) => setState(() => _current = i),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.folder), label: 'My Projects'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Collaborations'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.folder),
+            label: 'My Projects',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.group),
+            label: 'Collaborations',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

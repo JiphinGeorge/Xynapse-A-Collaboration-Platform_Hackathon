@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/project_model.dart';
 
+import 'screens/add_edit_project_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -8,7 +9,7 @@ import 'screens/auth/admin_login_screen.dart';
 import 'screens/user_home_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/admin/admin_users_screen.dart';
-import 'screens/project_details_screen.dart';  // ⭐ NEW
+import 'screens/project_details_screen.dart'; // ⭐ NEW
 
 class Routes {
   static const String splash = '/';
@@ -20,6 +21,7 @@ class Routes {
   static const String adminDashboard = '/adminDashboard';
 
   static const String adminUsers = '/admin/users';
+  static const String addProject = '/addProject';
 
   static const String projectDetails = '/projectDetails'; // optional constant
 }
@@ -55,6 +57,8 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => ProjectDetailsScreen(project: project),
         );
+      case Routes.addProject:
+        return MaterialPageRoute(builder: (_) => const AddEditProjectScreen());
 
       default:
         return MaterialPageRoute(

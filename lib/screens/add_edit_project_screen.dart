@@ -4,7 +4,7 @@ import '../providers/project_provider.dart';
 import '../models/project_model.dart';
 
 class AddEditProjectScreen extends StatefulWidget {
-  final Project? project; // ← If null → Add mode, else Edit mode
+  final Project? project;
 
   const AddEditProjectScreen({super.key, this.project});
 
@@ -27,18 +27,26 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
   @override
   void initState() {
     super.initState();
+    _loadExistingData();
+  }
 
-    if (isEdit) {
-      // Load existing project data
-      final p = widget.project!;
-      titleCtrl.text = p.title;
-      descCtrl.text = p.description;
-      category = p.category;
-      isPublic = p.isPublic == 1;
+  Future<void> _loadExistingData() async {
+    if (!isEdit) return;
 
-      // You can fetch collaborators if you want (optional)
-      // We'll load collaborators via provider later
-    }
+    final p = widget.project!;
+    final prov = Provider.of<ProjectProvider>(context, listen: false);
+
+    titleCtrl.text = p.title;
+    descCtrl.text = p.description;
+    category = p.category;
+    isPublic = p.isPublic == 1;
+
+    // Load collaborators
+    selectedUsers = await prov
+        .getMembers(p.id!)
+        .then((list) => list.map((u) => u.id!).toList());
+
+    setState(() {});
   }
 
   @override
@@ -50,13 +58,12 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           isEdit ? "Edit Project" : "Create Project",
           style: const TextStyle(color: Colors.white),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -83,9 +90,10 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
               _categoryDropdown(),
 
               const SizedBox(height: 20),
+
               _collaboratorSelector(prov),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 20),
 
               SwitchListTile(
                 title: const Text(
@@ -93,7 +101,7 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
                   style: TextStyle(color: Colors.white),
                 ),
                 value: isPublic,
-                activeColor: Colors.amber,
+                activeThumbColor: Colors.amber,
                 onChanged: (v) => setState(() => isPublic = v),
               ),
 
@@ -109,7 +117,7 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
     );
   }
 
-  // ------------------------ UI COMPONENTS ------------------------
+  //---------------------- UI COMPONENTS ----------------------
 
   Widget _inputBox({
     required TextEditingController controller,
@@ -119,24 +127,23 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
       maxLines: maxLines,
-      validator: (v) =>
-          (v == null || v.isEmpty) ? "This field is required" : null,
+      style: const TextStyle(color: Colors.white),
+      validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white70),
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white38),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.07),
+        fillColor: Colors.white.withValues(alpha: .07),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
 
   Widget _categoryDropdown() {
-    final categories = [
+    const categories = [
       "General",
       "Tech",
       "Design",
@@ -148,12 +155,12 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
 
     return DropdownButtonFormField<String>(
       dropdownColor: const Color(0xFF1C1C1C),
-      value: category,
+      initialValue: category,
       decoration: InputDecoration(
         labelText: "Category",
         labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.07),
+        fillColor: Colors.white.withValues(alpha:  0.07),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
       items: categories
@@ -174,7 +181,7 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
       children: [
         const Text(
           "Collaborators",
-          style: TextStyle(color: Colors.white70, fontSize: 15),
+          style: TextStyle(color: Color.fromARGB(219, 255, 255, 255), fontSize: 15),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -182,13 +189,13 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
           children: prov.users.map((u) {
             final selected = selectedUsers.contains(u.id);
             return FilterChip(
+              selected: selected,
               selectedColor: Colors.amber,
               backgroundColor: Colors.white12,
               label: Text(u.name, style: const TextStyle(color: Colors.white)),
-              selected: selected,
-              onSelected: (s) {
+              onSelected: (v) {
                 setState(() {
-                  if (s) {
+                  if (v) {
                     selectedUsers.add(u.id!);
                   } else {
                     selectedUsers.remove(u.id);
@@ -212,13 +219,11 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
       onPressed: () async {
         if (!_form.currentState!.validate()) return;
 
-        if (!mounted) return;
-
         if (!isEdit) {
-          // ------------------ CREATE NEW PROJECT ------------------
+          // ---- CREATE PROJECT ----
           final project = Project(
-            title: titleCtrl.text.trim(),
-            description: descCtrl.text.trim(),
+            title: titleCtrl.text,
+            description: descCtrl.text,
             creatorId: prov.currentUserId,
             category: category,
             isPublic: isPublic ? 1 : 0,
@@ -226,31 +231,27 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
           );
 
           await prov.addProject(project, selectedUsers);
-
-          Navigator.pop(context);
         } else {
-          // ------------------ UPDATE EXISTING ------------------
+          // ---- UPDATE PROJECT ----
           final old = widget.project!;
-
           final updated = Project(
             id: old.id,
-            title: titleCtrl.text.trim(),
-            description: descCtrl.text.trim(),
+            title: titleCtrl.text,
+            description: descCtrl.text,
             creatorId: old.creatorId,
             category: category,
             isPublic: isPublic ? 1 : 0,
             createdAt: old.createdAt,
           );
 
-          await prov.deleteProject(old.id!);
-          await prov.addProject(updated, selectedUsers);
-
-          Navigator.pop(context);
+          await prov.updateProject(updated, selectedUsers);
         }
+
+        if (mounted) Navigator.pop(context);
       },
       child: Text(
         isEdit ? "Update Project" : "Create Project",
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: const TextStyle(color: Colors.white),
       ),
     );
   }
@@ -258,8 +259,7 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
   Widget _deleteButton(ProjectProvider prov) {
     return TextButton(
       onPressed: () async {
-        final id = widget.project!.id!;
-        await prov.deleteProject(id);
+        await prov.deleteProject(widget.project!.id!);
         if (mounted) Navigator.pop(context);
       },
       child: const Text(

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/project_provider.dart';
 import '../models/project_model.dart';
 import 'add_edit_project_screen.dart';
+import '../providers/theme_provider.dart';
 
 
 class UserHomeScreen extends StatefulWidget {
@@ -98,43 +99,67 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   // ----------------------------- HEADER -----------------------------
   Widget _header(ProjectProvider prov) {
-    // SAFE user lookup
-    final user = prov.users.firstWhere(
-      (u) => u.id == prov.currentUserId,
-      orElse: () => prov.users.first,
-    );
+  final themeProv = Provider.of<ThemeProvider>(context, listen: false);
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Hello,",
-              style: GoogleFonts.poppins(fontSize: 22, color: Colors.white70),
-            ),
-            Text(
-              user.name,
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        CircleAvatar(
-          radius: 26,
-          backgroundColor: Colors.blueAccent,
-          child: Text(
-            user.name[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontSize: 24),
+  final user = prov.users.firstWhere(
+    (u) => u.id == prov.currentUserId,
+    orElse: () => prov.users.first,
+  );
+
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Hello,",
+            style: GoogleFonts.poppins(fontSize: 22, color: Colors.white70),
           ),
-        ),
-      ],
-    );
-  }
+          Text(
+            user.name,
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+
+      Row(
+        children: [
+          // 🌙 Light / Dark Toggle
+          Consumer<ThemeProvider>(
+            builder: (context, t, _) {
+              return IconButton(
+                icon: Icon(
+                  t.isDark ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.amber,
+                  size: 28,
+                ),
+                onPressed: t.toggleTheme,
+              );
+            },
+          ),
+
+          const SizedBox(width: 6),
+
+          // Profile Avatar
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: Colors.blueAccent,
+            child: Text(
+              user.name[0].toUpperCase(),
+              style: const TextStyle(color: Colors.white, fontSize: 24),
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 
   // -------------------------- SEARCH BAR --------------------------
   Widget _searchBar() {
