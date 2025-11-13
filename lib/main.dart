@@ -7,7 +7,7 @@ import 'providers/project_provider.dart';
 
 // Screens
 import 'screens/splash_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/user_home_screen.dart';
 import 'screens/my_projects_screen.dart';
 import 'screens/collaborations_screen.dart';
 import 'screens/profile_screen.dart';
@@ -56,8 +56,8 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   int _current = 0;
 
-  final _pages = const [
-    HomeScreen(),
+  final _pages =  [
+    UserHomeScreen(),
     MyProjectsScreen(),
     CollaborationsScreen(),
     ProfileScreen(),

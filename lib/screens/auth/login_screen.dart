@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../app_router.dart';
+import '../../db/db_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,10 +56,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+ if (email.isEmpty || password.isEmpty) {
       _showAnimatedSnackBar(
         "Please enter both email and password",
         color: const Color.fromARGB(255, 5, 79, 30),
@@ -65,18 +67,32 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-    // Simulate login button animation
-    setState(() => _isLoggingIn = true);
+  setState(() => _isLoggingIn = true);
 
-    await Future.delayed(const Duration(seconds: 1));
+  await Future.delayed(const Duration(milliseconds: 400));
 
-    setState(() => _isLoggingIn = false);
+  // 🔥 REAL SQLite login
+  final db = DBHelper();
+  final user = await db.loginUser(email, password);
 
-    _showAnimatedSnackBar("Welcome, $email!", color: Colors.green);
+  setState(() => _isLoggingIn = false);
 
-    // Navigate to main user home (temporary)
-    Navigator.pushReplacementNamed(context, Routes.home);
+  if (user == null) {
+    _showAnimatedSnackBar(
+      "Invalid email or password",
+      color: Colors.redAccent,
+    );
+    return;
   }
+
+  // 🔥 Save user session
+  final sp = await SharedPreferences.getInstance();
+  sp.setInt('current_user', user.id!);
+
+  _showAnimatedSnackBar("Welcome, ${user.name}!", color: Colors.green);
+
+  Navigator.pushReplacementNamed(context, Routes.home);
+}
 
   void _showAnimatedSnackBar(String message, {required Color color}) {
     final snackBar = SnackBar(

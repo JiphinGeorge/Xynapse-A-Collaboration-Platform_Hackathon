@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/auth/admin_login_screen.dart'; // ✅ Added
+import 'screens/auth/admin_login_screen.dart';
 import 'screens/user_home_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
+import 'screens/admin/admin_users_screen.dart'; // ✅ MUST import this
 
 /// 🌐 Centralized route management for Xynapse
 class Routes {
@@ -12,8 +14,11 @@ class Routes {
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
-  static const String adminLogin = '/adminLogin'; // ✅ Added
-  static const String adminDashboard = '/adminDashboard'; // Renamed for clarity
+
+  static const String adminLogin = '/adminLogin';
+  static const String adminDashboard = '/adminDashboard';
+
+  static const String adminUsers = '/admin/users'; // ✔ Optional clean constant
 }
 
 class AppRouter {
@@ -31,11 +36,15 @@ class AppRouter {
       case Routes.home:
         return MaterialPageRoute(builder: (_) => const UserHomeScreen());
 
-      case Routes.adminLogin: // ✅ New route
+      /// ADMIN
+      case Routes.adminLogin:
         return MaterialPageRoute(builder: (_) => const AdminLoginScreen());
 
       case Routes.adminDashboard:
         return MaterialPageRoute(builder: (_) => const AdminDashboard());
+
+      case Routes.adminUsers:
+        return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
 
       default:
         return MaterialPageRoute(

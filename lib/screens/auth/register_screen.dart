@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import '../../app_router.dart';
-
+import '../../db/db_helper.dart';
+import '../../models/user_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -33,10 +35,14 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   void initState() {
     super.initState();
-    _fadeController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2));
-    _fadeAnimation =
-        CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    );
     _fadeController.forward();
 
     // Focus listeners
@@ -60,31 +66,95 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  // registration |sql
   Future<void> _register() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirm = _confirmController.text.trim();
 
+    // --- VALIDATIONS -------------------------------------
+
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      _showAnimatedSnackBar("Please fill all fields",
-          color: const Color(0xFFE53935));
+      _showAnimatedSnackBar(
+        "Please fill all fields",
+        color: const Color(0xFFE53935),
+      );
       return;
     }
+
+    if (!isValidEmail(email)) {
+      _showAnimatedSnackBar(
+        "Enter a valid email address",
+        color: const Color(0xFFE53935),
+      );
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      _showAnimatedSnackBar(
+        "Password must be at least 6 characters and include a number",
+        color: const Color(0xFFFF7043),
+      );
+      return;
+    }
+
     if (password != confirm) {
-      _showAnimatedSnackBar("Passwords do not match",
-          color: const Color(0xFFFF7043));
+      _showAnimatedSnackBar(
+        "Passwords do not match",
+        color: const Color(0xFFFF7043),
+      );
       return;
     }
+
+    // -------------------------------------------------------
 
     setState(() => _isRegistering = true);
 
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isRegistering = false);
+    final db = DBHelper();
 
-    _showAnimatedSnackBar("Registration successful!", color: Colors.green);
+    final user = AppUser(
+      name: name,
+      email: email,
+      password: password,
+      department: _selectedRole == "Admin" ? "Admin" : "User",
+    );
 
-    Navigator.pushReplacementNamed(context, Routes.login);
+    try {
+      final int userId = await db.registerUser(user);
+
+      if (!mounted) return;
+
+      // Auto Login → Save userId to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt("current_user", userId);
+
+      setState(() => _isRegistering = false);
+
+      _showAnimatedSnackBar("Welcome, $name! 🎉", color: Colors.green);
+
+      // Navigate to Home directly
+      Navigator.pushReplacementNamed(context, Routes.home);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isRegistering = false);
+
+      _showAnimatedSnackBar(
+        "Email already exists!",
+        color: const Color(0xFFE53935),
+      );
+    }
+  }
+
+  bool isValidEmail(String email) {
+    final regex = RegExp(r"^[\w\.\-]+@([\w\-]+\.)+[a-zA-Z]{2,4}$");
+    return regex.hasMatch(email);
+  }
+
+  bool isStrongPassword(String password) {
+    final regex = RegExp(r'^(?=.*\d).{6,}$');
+    return regex.hasMatch(password);
   }
 
   void _showAnimatedSnackBar(String message, {required Color color}) {
@@ -113,13 +183,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                 color == Colors.green
                     ? const Color(0xFF00C853)
                     : color == const Color(0xFFE53935)
-                        ? const Color(0xFFE53935)
-                        : const Color(0xFF6A11CB),
+                    ? const Color(0xFFE53935)
+                    : const Color(0xFF6A11CB),
                 color == Colors.green
                     ? const Color(0xFF64DD17)
                     : color == const Color(0xFFE53935)
-                        ? const Color(0xFFFF7043)
-                        : const Color(0xFF2575FC),
+                    ? const Color(0xFFFF7043)
+                    : const Color(0xFF2575FC),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -284,10 +354,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                         style: GoogleFonts.inter(color: Colors.white),
                         iconEnabledColor: Colors.cyanAccent,
                         items: ['User', 'Admin']
-                            .map((role) => DropdownMenuItem<String>(
-                                  value: role,
-                                  child: Text(role),
-                                ))
+                            .map(
+                              (role) => DropdownMenuItem<String>(
+                                value: role,
+                                child: Text(role),
+                              ),
+                            )
                             .toList(),
                         onChanged: (value) {
                           setState(() {
@@ -412,8 +484,9 @@ class _RegisterScreenState extends State<RegisterScreen>
     bool isConfirm = false,
   }) {
     final isFocused = focusNode.hasFocus;
-    final isObscured =
-        isConfirm ? _obscureConfirm : (isPassword ? _obscurePassword : false);
+    final isObscured = isConfirm
+        ? _obscureConfirm
+        : (isPassword ? _obscurePassword : false);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
