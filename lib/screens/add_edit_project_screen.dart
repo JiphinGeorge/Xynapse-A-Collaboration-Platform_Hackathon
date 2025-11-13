@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/project_provider.dart';
+import '../providers/theme_provider.dart';
 import '../models/project_model.dart';
 
 class AddEditProjectScreen extends StatefulWidget {
@@ -23,93 +25,122 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
   List<int> selectedUsers = [];
 
   bool get isEdit => widget.project != null;
+  bool _loaded = false; // ensures safe async load
 
   @override
-  void initState() {
-    super.initState();
-    _loadExistingData();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loaded) {
+      _loadInitial();
+      _loaded = true;
+    }
   }
 
-  Future<void> _loadExistingData() async {
+  Future<void> _loadInitial() async {
     if (!isEdit) return;
 
     final p = widget.project!;
     final prov = Provider.of<ProjectProvider>(context, listen: false);
 
+    // Load project basic data
     titleCtrl.text = p.title;
     descCtrl.text = p.description;
     category = p.category;
     isPublic = p.isPublic == 1;
 
-    // Load collaborators
-    selectedUsers = await prov
-        .getMembers(p.id!)
-        .then((list) => list.map((u) => u.id!).toList());
-
     setState(() {});
+
+    // Load collaborators safely
+    try {
+      final members = await prov.getMembers(p.id!);
+      selectedUsers = members.map((u) => u.id!).toList();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint("Failed to load collaborators: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ProjectProvider>(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // 🔥 Prevent crash: wait until users list is available
+    if (prov.users.isEmpty) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(color: theme.colorScheme.primary),
+        ),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          isEdit ? "Edit Project" : "Create Project",
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(isEdit ? "Edit Project" : "Create Project"),
+        actions: [
+          // Theme Toggle
+          Consumer<ThemeProvider>(
+            builder: (_, t, __) {
+              return IconButton(
+                icon: Icon(
+                  t.isDark ? Icons.light_mode : Icons.dark_mode,
+                  color: Colors.amber,
+                ),
+                onPressed: t.toggleTheme,
+              );
+            },
+          ),
+        ],
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _form,
           child: ListView(
             children: [
-              _inputBox(
+              _inputField(
                 controller: titleCtrl,
                 label: "Project Title",
                 hint: "Enter project name",
+                theme: theme,
               ),
+              const SizedBox(height: 16),
 
-              const SizedBox(height: 15),
-
-              _inputBox(
+              _inputField(
                 controller: descCtrl,
                 label: "Description",
-                hint: "Describe your project...",
+                hint: "Describe the project...",
                 maxLines: 4,
+                theme: theme,
               ),
-
-              const SizedBox(height: 15),
-
-              _categoryDropdown(),
-
               const SizedBox(height: 20),
 
-              _collaboratorSelector(prov),
+              _categoryDropdown(theme),
+              const SizedBox(height: 20),
 
+              _collaboratorSelector(prov, theme),
               const SizedBox(height: 20),
 
               SwitchListTile(
-                title: const Text(
-                  "Public Project",
-                  style: TextStyle(color: Colors.white),
-                ),
+                title: Text("Public Project"),
                 value: isPublic,
-                activeThumbColor: Colors.amber,
+                activeColor: theme.colorScheme.primary,
                 onChanged: (v) => setState(() => isPublic = v),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 30),
 
-              _saveButton(prov),
+              _saveButton(prov, theme),
 
-              if (isEdit) ...[const SizedBox(height: 15), _deleteButton(prov)],
+              if (isEdit)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: _deleteButton(prov),
+                ),
             ],
           ),
         ),
@@ -117,32 +148,30 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
     );
   }
 
-  //---------------------- UI COMPONENTS ----------------------
+  // ------------------------ UI COMPONENTS ------------------------
 
-  Widget _inputBox({
+  Widget _inputField({
     required TextEditingController controller,
     required String label,
     required String hint,
+    required ThemeData theme,
     int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white),
       validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white38),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: .07),
+        fillColor: theme.cardColor.withOpacity(0.3),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
 
-  Widget _categoryDropdown() {
+  Widget _categoryDropdown(ThemeData theme) {
     const categories = [
       "General",
       "Tech",
@@ -154,45 +183,36 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
     ];
 
     return DropdownButtonFormField<String>(
-      dropdownColor: const Color(0xFF1C1C1C),
       initialValue: category,
       decoration: InputDecoration(
         labelText: "Category",
-        labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.white.withValues(alpha:  0.07),
+        fillColor: theme.cardColor.withOpacity(0.3),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
       items: categories
-          .map(
-            (c) => DropdownMenuItem(
-              value: c,
-              child: Text(c, style: const TextStyle(color: Colors.white)),
-            ),
-          )
+          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
           .toList(),
       onChanged: (v) => setState(() => category = v!),
     );
   }
 
-  Widget _collaboratorSelector(ProjectProvider prov) {
+  Widget _collaboratorSelector(ProjectProvider prov, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Collaborators",
-          style: TextStyle(color: Color.fromARGB(219, 255, 255, 255), fontSize: 15),
-        ),
-        const SizedBox(height: 8),
+        Text("Collaborators", style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 10),
+
         Wrap(
           spacing: 8,
           children: prov.users.map((u) {
             final selected = selectedUsers.contains(u.id);
             return FilterChip(
+              label: Text(u.name),
               selected: selected,
               selectedColor: Colors.amber,
-              backgroundColor: Colors.white12,
-              label: Text(u.name, style: const TextStyle(color: Colors.white)),
+              backgroundColor: theme.cardColor.withOpacity(0.3),
               onSelected: (v) {
                 setState(() {
                   if (v) {
@@ -209,50 +229,44 @@ class _AddEditProjectScreenState extends State<AddEditProjectScreen> {
     );
   }
 
-  Widget _saveButton(ProjectProvider prov) {
+  Widget _saveButton(ProjectProvider prov, ThemeData theme) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: theme.colorScheme.primary,
         padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       onPressed: () async {
         if (!_form.currentState!.validate()) return;
 
         if (!isEdit) {
-          // ---- CREATE PROJECT ----
+          // CREATE
           final project = Project(
-            title: titleCtrl.text,
-            description: descCtrl.text,
+            title: titleCtrl.text.trim(),
+            description: descCtrl.text.trim(),
             creatorId: prov.currentUserId,
             category: category,
             isPublic: isPublic ? 1 : 0,
             createdAt: DateTime.now().toIso8601String(),
           );
-
           await prov.addProject(project, selectedUsers);
         } else {
-          // ---- UPDATE PROJECT ----
+          // UPDATE
           final old = widget.project!;
           final updated = Project(
             id: old.id,
-            title: titleCtrl.text,
-            description: descCtrl.text,
+            title: titleCtrl.text.trim(),
+            description: descCtrl.text.trim(),
             creatorId: old.creatorId,
             category: category,
             isPublic: isPublic ? 1 : 0,
             createdAt: old.createdAt,
           );
-
           await prov.updateProject(updated, selectedUsers);
         }
 
         if (mounted) Navigator.pop(context);
       },
-      child: Text(
-        isEdit ? "Update Project" : "Create Project",
-        style: const TextStyle(color: Colors.white),
-      ),
+      child: Text(isEdit ? "Update Project" : "Create Project"),
     );
   }
 

@@ -114,4 +114,31 @@ Future<void> updateProject(Project p, List<int> memberIds) async {
 }
 
 
+List<Project> getCollabFiltered(String q, String cat) {
+  return collaborations.where((p) {
+    return _filter(p, q, cat);
+  }).toList();
+}
+
+List<Project> getMyFiltered(String q, String cat) {
+  return myProjects.where((p) {
+    return _filter(p, q, cat);
+  }).toList();
+}
+
+List<Project> getPublicFiltered(String q, String cat) {
+  return publicProjects.where((p) {
+    return _filter(p, q, cat);
+  }).toList();
+}
+
+bool _filter(Project p, String q, String cat) {
+  final matchTitle = p.title.toLowerCase().contains(q.toLowerCase());
+  final matchCat = (cat == "All") ||
+      (p.category.toLowerCase() == cat.toLowerCase());
+
+  return matchTitle && matchCat;
+}
+
+
 }
