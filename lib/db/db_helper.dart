@@ -328,43 +328,73 @@ class DBHelper {
     return res.map((e) => AppUser.fromMap(e)).toList();
   }
 
-// ---------------------------
-// UPDATE USER
-// ---------------------------
-Future<int> updateUser(AppUser user) async {
+  // ---------------------------
+  // UPDATE USER
+  // ---------------------------
+  Future<int> updateUser(AppUser user) async {
+    final db = await database;
+    return db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
+  // ---------------------------
+  // DELETE USER
+  // ---------------------------
+  Future<int> deleteUser(int userId) async {
+    final db = await database;
+    return db.delete('users', where: 'id = ?', whereArgs: [userId]);
+  }
+
+  // ---------------------------
+  // GET USER BY ID (optional)
+  // ---------------------------
+  Future<AppUser?> getUserById(int id) async {
+    final db = await database;
+    final res = await db.query('users', where: 'id = ?', whereArgs: [id]);
+    return res.isNotEmpty ? AppUser.fromMap(res.first) : null;
+  }
+
+  // ---------------- UPDATE PROJECT ----------------
+Future<int> updateProject(Project p) async {
   final db = await database;
-  return db.update(
-    'users',
-    user.toMap(),
+  return await db.update(
+    'projects',
+    p.toMap(),
     where: 'id = ?',
-    whereArgs: [user.id],
+    whereArgs: [p.id],
   );
 }
 
-// ---------------------------
-// DELETE USER
-// ---------------------------
-Future<int> deleteUser(int userId) async {
-  final db = await database;
-  return db.delete(
-    'users',
-    where: 'id = ?',
-    whereArgs: [userId],
-  );
-}
-
-// ---------------------------
-// GET USER BY ID (optional)
-// ---------------------------
-Future<AppUser?> getUserById(int id) async {
+// ---------------- GET COLLABORATORS ----------------
+Future<List<int>> getCollaboratorIds(int projectId) async {
   final db = await database;
   final res = await db.query(
-    'users',
-    where: 'id = ?',
-    whereArgs: [id],
+    'collaborations',
+    where: 'project_id = ?',
+    whereArgs: [projectId],
   );
-  return res.isNotEmpty ? AppUser.fromMap(res.first) : null;
+
+  return res.map((e) => e['user_id'] as int).toList();
 }
 
+// ---------------- REPLACE COLLABORATORS ----------------
+Future<void> setCollaborators(int projectId, List<int> userIds) async {
+  final db = await database;
+
+  // delete old
+  await db.delete('collaborations', where: 'project_id = ?', whereArgs: [projectId]);
+
+  // add new
+  for (var uid in userIds) {
+    await db.insert('collaborations', {
+      'project_id': projectId,
+      'user_id': uid,
+    });
+  }
+}
 
 }

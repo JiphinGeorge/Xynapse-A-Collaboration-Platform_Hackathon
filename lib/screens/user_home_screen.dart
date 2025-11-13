@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/project_provider.dart';
 import '../models/project_model.dart';
+import 'add_edit_project_screen.dart';
+
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -22,22 +24,32 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     "Research",
     "Design",
     "Event",
-    "Others"
+    "Others",
   ];
 
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ProjectProvider>(context);
 
-    // --- Filtered Projects ---
-    List<Project> publicList =
-        prov.allPublicProjects.where(_filterProject).toList();
+    // ---------------- SAFE CHECK ----------------
+    if (prov.users.isEmpty || prov.currentUserId == 0) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0D0D0D),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
 
-    List<Project> myList =
-        prov.myProjects.where(_filterProject).toList();
+    // --------------- FILTERED LISTS ---------------
+    List<Project> publicList = prov.projects
+        .where((p) => p.isPublic == 1)
+        .where(_filterProject)
+        .toList();
 
-    List<Project> collabList =
-        prov.collaborations.where(_filterProject).toList();
+    List<Project> myList = prov.myProjects.where(_filterProject).toList();
+
+    List<Project> collabList = prov.collaborations
+        .where(_filterProject)
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
@@ -59,11 +71,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
               const SizedBox(height: 10),
 
-              // COLLABORATIONS
+              // COLLABORATION PROJECTS
               if (collabList.isNotEmpty)
                 _sectionTitle("Collaborative Projects"),
-              if (collabList.isNotEmpty)
-                _projectList(collabList, prov),
+              if (collabList.isNotEmpty) _projectList(collabList, prov),
 
               const SizedBox(height: 10),
 
@@ -85,9 +96,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
-  // ----------------------------- UI COMPONENTS -----------------------------
-
+  // ----------------------------- HEADER -----------------------------
   Widget _header(ProjectProvider prov) {
+    // SAFE user lookup
     final user = prov.users.firstWhere(
       (u) => u.id == prov.currentUserId,
       orElse: () => prov.users.first,
@@ -99,14 +110,18 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Hello,",
-                style: GoogleFonts.poppins(
-                    fontSize: 22, color: Colors.white70)),
-            Text(user.name,
-                style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+            Text(
+              "Hello,",
+              style: GoogleFonts.poppins(fontSize: 22, color: Colors.white70),
+            ),
+            Text(
+              user.name,
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
         CircleAvatar(
@@ -116,16 +131,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             user.name[0].toUpperCase(),
             style: const TextStyle(color: Colors.white, fontSize: 24),
           ),
-        )
+        ),
       ],
     );
   }
 
+  // -------------------------- SEARCH BAR --------------------------
   Widget _searchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
       ),
       child: TextField(
@@ -141,6 +157,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
+  // ------------------------ CATEGORY CHIPS ------------------------
   Widget _categoryChips() {
     return SizedBox(
       height: 40,
@@ -159,9 +176,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               ),
               selectedColor: Colors.amber,
               backgroundColor: Colors.grey.shade800,
-              onSelected: (_) {
-                setState(() => _selectedCategory = cat);
-              },
+              onSelected: (_) => setState(() => _selectedCategory = cat),
             ),
           );
         }).toList(),
@@ -169,6 +184,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
+  // ---------------------------- SECTION TITLE ----------------------------
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -183,100 +199,133 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
+  // ---------------------------- PROJECT LIST ----------------------------
   Widget _projectList(List<Project> list, ProjectProvider prov) {
     if (list.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(12),
-        child: Text("No projects available",
-            style: TextStyle(color: Colors.white70)),
+        child: Text(
+          "No projects available",
+          style: TextStyle(color: Colors.white70),
+        ),
       );
     }
 
-    return Column(
-      children: list.map((p) => _projectCard(p, prov)).toList(),
-    );
+    return Column(children: list.map((p) => _projectCard(p, prov)).toList());
   }
 
+  // ----------------------------- PROJECT CARD -----------------------------
   Widget _projectCard(Project p, ProjectProvider prov) {
-    final bool isMine = p.creatorId == prov.currentUserId;
+    final isMine = p.creatorId == prov.currentUserId;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(14),
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, "/projectDetails", arguments: p);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title Row
+            // Title Row
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    Text(
+      p.title,
+      style: GoogleFonts.poppins(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    ),
+
+    if (isMine)
+      Row(
         children: [
-          // Title Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(p.title,
-                  style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white)),
-              if (isMine)
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => prov.deleteProject(p.id!),
-                )
-            ],
+          // EDIT button
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.amber),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      AddEditProjectScreen(project: p), // ← EDIT MODE
+                ),
+              );
+            },
           ),
 
-          const SizedBox(height: 4),
-
-          // Category Badge
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.amber.withOpacity(0.9),
-            ),
-            child: Text(
-              p.category,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.black),
-            ),
+          // DELETE button
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () => prov.deleteProject(p.id!),
           ),
-
-          const SizedBox(height: 8),
-
-          // Description
-          Text(
-            p.description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(color: Colors.white70),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Join button (only if public & not mine)
-          if (!isMine && p.isPublic == 1)
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-              ),
-              onPressed: () => prov.joinProject(p.id!),
-              child: const Text("Join Project"),
-            ),
         ],
       ),
+  ],
+),
+
+
+            const SizedBox(height: 4),
+
+            // Category badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.amber,
+              ),
+              child: Text(
+                p.category,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Description
+            Text(
+              p.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(color: Colors.white70),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Join button
+            if (!isMine && p.isPublic == 1)
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                ),
+                onPressed: () => prov.joinProject(p.id!),
+                child: const Text("Join Project"),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  // ---------------- FILTER FUNCTION ----------------
-
+  // --------------------------- FILTER ---------------------------
   bool _filterProject(Project p) {
     bool matchTitle = p.title.toLowerCase().contains(_query.toLowerCase());
-    bool matchCategory = _selectedCategory == "All" ||
-        p.category.toLowerCase() ==
-            _selectedCategory.toLowerCase();
+
+    bool matchCategory =
+        _selectedCategory == "All" ||
+        p.category.toLowerCase() == _selectedCategory.toLowerCase();
 
     return matchTitle && matchCategory;
   }

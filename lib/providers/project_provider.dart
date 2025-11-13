@@ -104,4 +104,14 @@ List<Project> get allPublicProjects {
     await _db.deleteProject(projectId);
     await refreshAll();
   }
+
+  // Update existing project
+// ---------------- UPDATE PROJECT ----------------
+Future<void> updateProject(Project p, List<int> memberIds) async {
+  await _db.updateProject(p);
+  await _db.setCollaborators(p.id!, memberIds);
+  await refreshAll();
+}
+
+
 }
