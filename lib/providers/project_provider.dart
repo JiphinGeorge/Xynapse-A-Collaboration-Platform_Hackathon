@@ -131,6 +131,12 @@ List<Project> getPublicFiltered(String q, String cat) {
     return _filter(p, q, cat);
   }).toList();
 }
+// ------------------------------------------------------------
+// ALIAS: fetchAllProjects()   (Used by Home Screen refresh)
+// ------------------------------------------------------------
+Future<void> fetchAllProjects() async {
+  await refreshAll();
+}
 
 bool _filter(Project p, String q, String cat) {
   final matchTitle = p.title.toLowerCase().contains(q.toLowerCase());

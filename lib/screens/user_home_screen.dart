@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:xynapse/screens/project_search_filter.dart';
 import '../providers/project_provider.dart';
-import '../models/project_model.dart';
-import 'add_edit_project_screen.dart';
-
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -14,319 +11,234 @@ class UserHomeScreen extends StatefulWidget {
 }
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
-  String _query = '';
-  String _selectedCategory = "All";
-
-  final List<String> categories = [
-    "All",
-    "Tech",
-    "Social",
-    "Research",
-    "Design",
-    "Event",
-    "Others",
-  ];
+  // 🔎 Search & Category state
+  final TextEditingController searchC = TextEditingController();
+  String selectedCategory = "All";
 
   @override
   Widget build(BuildContext context) {
-    final prov = Provider.of<ProjectProvider>(context);
+    final provider = Provider.of<ProjectProvider>(context);
 
-    // ---------------- SAFE CHECK ----------------
-    if (prov.users.isEmpty || prov.currentUserId == 0) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0D0D0D),
-        body: Center(child: CircularProgressIndicator(color: Colors.white)),
-      );
-    }
-
-    // --------------- FILTERED LISTS ---------------
-    List<Project> publicList = prov.projects
-        .where((p) => p.isPublic == 1)
-        .where(_filterProject)
-        .toList();
-
-    List<Project> myList = prov.myProjects.where(_filterProject).toList();
-
-    List<Project> collabList = prov.collaborations
-        .where(_filterProject)
-        .toList();
+    // 🔥 Filter ALL 3 lists
+    final explore = provider.getPublicFiltered(searchC.text, selectedCategory);
+    final myProjects = provider.getMyFiltered(searchC.text, selectedCategory);
+    final collaborations = provider.getCollabFiltered(
+      searchC.text,
+      selectedCategory,
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: ListView(
-            children: [
-              _header(prov),
-              const SizedBox(height: 20),
-              _searchBar(),
-              const SizedBox(height: 15),
-              _categoryChips(),
-              const SizedBox(height: 20),
-
-              // MY PROJECTS
-              if (myList.isNotEmpty) _sectionTitle("My Projects"),
-              if (myList.isNotEmpty) _projectList(myList, prov),
-
-              const SizedBox(height: 10),
-
-              // COLLABORATION PROJECTS
-              if (collabList.isNotEmpty)
-                _sectionTitle("Collaborative Projects"),
-              if (collabList.isNotEmpty) _projectList(collabList, prov),
-
-              const SizedBox(height: 10),
-
-              // PUBLIC PROJECTS
-              _sectionTitle("Explore Public Projects"),
-              _projectList(publicList, prov),
-            ],
-          ),
+      appBar: AppBar(
+        title: const Text(
+          "Xynapse",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
+        elevation: 2,
       ),
-
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blueAccent,
-        onPressed: () {
-          Navigator.pushNamed(context, "/addProject");
-        },
-        child: const Icon(Icons.add),
+// floatingActionButton: FloatingActionButton.extended(
+//   onPressed: () {
+//     Navigator.pushNamed(context, '/addProject');
+//   },
+//   backgroundColor: Colors.blueAccent,
+//   icon: const Icon(Icons.add),
+//   label: const Text(
+//     "Create Project",
+//     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//   ),
+// ),
+floatingActionButton: Container(
+  decoration: BoxDecoration(
+    color: Colors.blueAccent.withValues(alpha:  0.9),
+    borderRadius: BorderRadius.circular(40),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.blueAccent.withValues(alpha: 0.4),
+        blurRadius: 12,
+        spreadRadius: 1,
       ),
-    );
-  }
-
-  // ----------------------------- HEADER -----------------------------
-  Widget _header(ProjectProvider prov) {
-    // SAFE user lookup
-    final user = prov.users.firstWhere(
-      (u) => u.id == prov.currentUserId,
-      orElse: () => prov.users.first,
-    );
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Hello,",
-              style: GoogleFonts.poppins(fontSize: 22, color: Colors.white70),
-            ),
-            Text(
-              user.name,
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        CircleAvatar(
-          radius: 26,
-          backgroundColor: Colors.blueAccent,
-          child: Text(
-            user.name[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontSize: 24),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // -------------------------- SEARCH BAR --------------------------
-  Widget _searchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: TextField(
-        style: const TextStyle(color: Colors.white),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          hintText: "Search projects...",
-          hintStyle: TextStyle(color: Colors.white54),
-          icon: Icon(Icons.search, color: Colors.white70),
-        ),
-        onChanged: (value) => setState(() => _query = value),
-      ),
-    );
-  }
-
-  // ------------------------ CATEGORY CHIPS ------------------------
-  Widget _categoryChips() {
-    return SizedBox(
-      height: 40,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: categories.map((cat) {
-          final selected = _selectedCategory == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: ChoiceChip(
-              label: Text(cat),
-              selected: selected,
-              labelStyle: TextStyle(
-                color: selected ? Colors.black : Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-              selectedColor: Colors.amber,
-              backgroundColor: Colors.grey.shade800,
-              onSelected: (_) => setState(() => _selectedCategory = cat),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  // ---------------------------- SECTION TITLE ----------------------------
-  Widget _sectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------- PROJECT LIST ----------------------------
-  Widget _projectList(List<Project> list, ProjectProvider prov) {
-    if (list.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          "No projects available",
-          style: TextStyle(color: Colors.white70),
-        ),
-      );
-    }
-
-    return Column(children: list.map((p) => _projectCard(p, prov)).toList());
-  }
-
-  // ----------------------------- PROJECT CARD -----------------------------
-  Widget _projectCard(Project p, ProjectProvider prov) {
-    final isMine = p.creatorId == prov.currentUserId;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, "/projectDetails", arguments: p);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title Row
-            // Title Row
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    Text(
-      p.title,
-      style: GoogleFonts.poppins(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      ),
+    ],
+  ),
+  child: FloatingActionButton.extended(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    onPressed: () => Navigator.pushNamed(context, '/addProject'),
+    icon: const Icon(Icons.add, color: Colors.white),
+    label: const Text(
+      "Add Project",
+      style: TextStyle(color: Colors.white),
     ),
-
-    if (isMine)
-      Row(
-        children: [
-          // EDIT button
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.amber),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      AddEditProjectScreen(project: p), // ← EDIT MODE
-                ),
-              );
-            },
-          ),
-
-          // DELETE button
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => prov.deleteProject(p.id!),
-          ),
-        ],
-      ),
-  ],
+  ),
 ),
 
 
-            const SizedBox(height: 4),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await provider.refreshAll();
+        },
 
-            // Category badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.amber,
-              ),
-              child: Text(
-                p.category,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔎 Search + Filter Section
+                ProjectSearchFilter(
+                  searchController: searchC,
+                  selectedCategory: selectedCategory,
+                  onSearchChanged: (_) => setState(() {}),
+                  onCategoryChanged: (cat) {
+                    setState(() => selectedCategory = cat);
+                  },
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 8),
+                const SizedBox(height: 25),
 
-            // Description
-            Text(
-              p.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(color: Colors.white70),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Join button
-            if (!isMine && p.isPublic == 1)
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                // 🔹 EXPLORE PROJECTS
+                const Text(
+                  "Explore Projects",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                onPressed: () => prov.joinProject(p.id!),
-                child: const Text("Join Project"),
-              ),
-          ],
+
+                const SizedBox(height: 10),
+
+                explore.isEmpty
+                    ? _emptyMessage("No matching public projects.")
+                    : _horizontalProjectList(context, explore),
+
+                const SizedBox(height: 25),
+
+                // 🔹 MY PROJECTS
+                const Text(
+                  "My Projects",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                myProjects.isEmpty
+                    ? _emptyMessage("No matching projects you created.")
+                    : _horizontalProjectList(context, myProjects),
+
+                const SizedBox(height: 25),
+
+                // 🔹 COLLABORATIONS
+                const Text(
+                  "Collaborations",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                collaborations.isEmpty
+                    ? _emptyMessage("No matching collaborations.")
+                    : _horizontalProjectList(context, collaborations),
+
+                const SizedBox(height: 30),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // --------------------------- FILTER ---------------------------
-  bool _filterProject(Project p) {
-    bool matchTitle = p.title.toLowerCase().contains(_query.toLowerCase());
+  // -----------------------------------------------------------------
+  // EMPTY MESSAGE
+  // -----------------------------------------------------------------
+  Widget _emptyMessage(String msg) {
+    return Container(
+      height: 80,
+      alignment: Alignment.center,
+      child: Text(msg, style: const TextStyle(color: Colors.grey)),
+    );
+  }
 
-    bool matchCategory =
-        _selectedCategory == "All" ||
-        p.category.toLowerCase() == _selectedCategory.toLowerCase();
+  // -----------------------------------------------------------------
+  // HORIZONTAL PROJECT LIST
+  // -----------------------------------------------------------------
+  Widget _horizontalProjectList(BuildContext context, List projects) {
+    return SizedBox(
+      height: 160,
 
-    return matchTitle && matchCategory;
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: projects.length,
+
+        itemBuilder: (context, index) {
+          final project = projects[index];
+
+          return Container(
+            width: 230,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(14),
+
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  project.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  project.description,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+
+                const Spacer(),
+
+                Align(
+                  alignment: Alignment.bottomRight,
+
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/projectDetails',
+                        arguments: project,
+                      );
+                    },
+
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(20, 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+
+                    child: const Text("View"),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }

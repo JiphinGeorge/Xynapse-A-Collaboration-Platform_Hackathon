@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:xynapse/providers/project_provider.dart';
+import 'package:provider/provider.dart';
+
 import '../../app_router.dart';
 import '../../db/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -86,12 +88,19 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   // 🔥 Save user session
-  final sp = await SharedPreferences.getInstance();
-  sp.setInt('current_user', user.id!);
+final sp = await SharedPreferences.getInstance();
+await sp.setInt('current_user', user.id!);
 
-  _showAnimatedSnackBar("Welcome, ${user.name}!", color: Colors.green);
+// ⭐ Tell Provider who is logged in
+// (THIS WAS MISSING)
+Provider.of<ProjectProvider>(context, listen: false)
+    .setCurrentUser(user.id!);
 
-  Navigator.pushReplacementNamed(context, Routes.home);
+_showAnimatedSnackBar("Welcome, ${user.name}!", color: Colors.green);
+
+// Go to Home
+Navigator.pushReplacementNamed(context, Routes.home);
+
 }
 
   void _showAnimatedSnackBar(String message, {required Color color}) {
