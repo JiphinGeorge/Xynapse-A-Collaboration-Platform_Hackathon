@@ -205,13 +205,19 @@ Multi-role system (Mentor, Reviewer)
 Analytics & charts using fl_chart
 
 Dark/light theme switch
+
 📜 License
 
 This project is licensed under the MIT License.
 
-💙 Credits
+Copyright (c) 2025 Jiphin George & Team
+Permission is hereby granted, free of charge, to any person obtaining a copy...
+
+
+🏆 Credits
 
 Developed by Jiphin George & Team
-Built during Execute Event Hackathon – 2025
+Built during Execute Event Hackathon — 2025
 
-If you like this project, ⭐ the repository!
+⭐ If you like this project, please consider starring the GitHub repo:
+👉 https://github.com/JiphinGeorge/Xynapse-A-Collaboration-Platform_Hackathon
