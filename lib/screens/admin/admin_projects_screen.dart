@@ -27,9 +27,25 @@ class _AdminProjectsScreenState extends State<AdminProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+
       appBar: AppBar(
-        title: const Text("All Projects"),
-        backgroundColor: Colors.black87,
+        backgroundColor: const Color(0xFF202428), // Matches admin theme
+        elevation: 0,
+
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.amberAccent,
+            size: 22,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+
+        title: const Text(
+          "All Projects",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
 
       body: projects.isEmpty
@@ -41,10 +57,15 @@ class _AdminProjectsScreenState extends State<AdminProjectsScreen> {
             )
           : ListView.builder(
               itemCount: projects.length,
+              padding: const EdgeInsets.symmetric(vertical: 10),
               itemBuilder: (context, index) {
                 final p = projects[index];
+
                 return Card(
                   color: const Color(0xFF1A1C1E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
@@ -64,7 +85,7 @@ class _AdminProjectsScreenState extends State<AdminProjectsScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    trailing: Icon(
+                    trailing: const Icon(
                       Icons.arrow_forward_ios,
                       color: Colors.amberAccent,
                       size: 18,

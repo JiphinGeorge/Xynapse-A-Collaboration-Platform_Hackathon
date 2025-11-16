@@ -13,7 +13,7 @@ void main() async {
 
   //  Load provider BEFORE the UI starts
   final projectProvider = ProjectProvider();
-  await projectProvider.init(); 
+  await projectProvider.init();
 
   runApp(
     MultiProvider(
@@ -33,12 +33,35 @@ class XynapseApp extends StatelessWidget {
     return MaterialApp(
       title: 'Xynapse',
       debugShowCheckedModeBanner: false,
+      
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         textTheme: GoogleFonts.poppinsTextTheme(),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: NoTransitionsBuilder(),
+            TargetPlatform.iOS: NoTransitionsBuilder(),
+          },
+        ),
       ),
+
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: Routes.splash,
     );
+  }
+}
+
+class NoTransitionsBuilder extends PageTransitionsBuilder {
+  const NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child; 
   }
 }

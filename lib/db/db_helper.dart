@@ -484,4 +484,44 @@ class DBHelper {
       whereArgs: [userId],
     );
   }
+
+  // Count users created in last 24 hours
+  Future<int> countNewUsersToday() async {
+    final db = await database;
+    final res = await db.rawQuery('''
+    SELECT COUNT(*) AS total FROM users
+    WHERE created_at >= datetime('now', '-1 day')
+  ''');
+    return Sqflite.firstIntValue(res) ?? 0;
+  }
+
+  // Count projects created in last 24 hours
+  Future<int> countNewProjectsToday() async {
+    final db = await database;
+    final res = await db.rawQuery('''
+    SELECT COUNT(*) AS total FROM projects
+    WHERE created_at >= datetime('now', '-1 day')
+  ''');
+    return Sqflite.firstIntValue(res) ?? 0;
+  }
+
+  // Count feedback messages in last 24 hours
+  Future<int> countFeedbackToday() async {
+    final db = await database;
+    final res = await db.rawQuery('''
+    SELECT COUNT(*) AS total FROM feedback
+    WHERE created_at >= datetime('now', '-1 day')
+  ''');
+    return Sqflite.firstIntValue(res) ?? 0;
+  }
+
+  // Count activity logs in last 24 hours
+  Future<int> countActivityToday() async {
+    final db = await database;
+    final res = await db.rawQuery('''
+    SELECT COUNT(*) AS total FROM activity_logs
+    WHERE timestamp >= datetime('now', '-1 day')
+  ''');
+    return Sqflite.firstIntValue(res) ?? 0;
+  }
 }

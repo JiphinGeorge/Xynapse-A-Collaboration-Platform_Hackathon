@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../db/db_helper.dart';
@@ -35,20 +37,21 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
     final updated = widget.project.copyWith(status: newStatus);
     await db.updateProject(updated);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Project $newStatus")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Project $newStatus")));
 
-    Navigator.pop(context,true); // return to previous screen
+    Navigator.pop(context, true); // return to previous screen
   }
 
   Future<void> _deleteProject() async {
     await db.deleteProject(widget.project.id!);
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Project Deleted")));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Project Deleted")));
 
-    Navigator.pop(context,true);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -59,9 +62,20 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
       backgroundColor: const Color(0xFF0E0E12),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF151518),
-        title: const Text("Project Details"),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color(0xFF202428), // match admin theme
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.amberAccent,
+            size: 22,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Project Details",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
 
       body: creator == null
@@ -102,7 +116,7 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
                   Text(
                     p.description,
                     style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha:  0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 16,
                     ),
                   ),
@@ -125,8 +139,10 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
                       children: [
                         _infoRow("Category", p.category),
                         _infoRow("Status", p.status),
-                        _infoRow("Visibility",
-                            p.isPublic == 1 ? "Public" : "Private"),
+                        _infoRow(
+                          "Visibility",
+                          p.isPublic == 1 ? "Public" : "Private",
+                        ),
                         _infoRow("Created At", p.createdAt),
                       ],
                     ),
@@ -155,19 +171,41 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
                           children: collaborators
                               .map(
                                 (c) => ListTile(
-                                  leading: const CircleAvatar(
-                                    backgroundColor: Colors.amber,
-                                    child: Icon(Icons.person,
-                                        color: Colors.black),
+                                  leading: CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: Colors.amber.withOpacity(
+                                      0.25,
+                                    ),
+                                    backgroundImage:
+                                        (c.profileImage != null &&
+                                            c.profileImage!.isNotEmpty &&
+                                            File(c.profileImage!).existsSync())
+                                        ? FileImage(File(c.profileImage!))
+                                        : null,
+                                    child:
+                                        (c.profileImage == null ||
+                                            c.profileImage!.isEmpty ||
+                                            !File(c.profileImage!).existsSync())
+                                        ? Text(
+                                            c.name[0].toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Colors.amber,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                            ),
+                                          )
+                                        : null,
                                   ),
+
                                   title: Text(
                                     c.name,
                                     style: const TextStyle(color: Colors.white),
                                   ),
                                   subtitle: Text(
                                     c.email,
-                                    style:
-                                        const TextStyle(color: Colors.white54),
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
                                   ),
                                 ),
                               )
@@ -217,10 +255,7 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.white),
-            ),
+            child: Text(value, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -14,299 +14,102 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard>
     with TickerProviderStateMixin {
   late AnimationController _controller;
+  Timer? _refreshTimer; // <-- FIX #1
 
   int totalUsers = 0;
   int totalProjects = 0;
-  int pending = 0;
   int feedbackCount = 0;
+
+  int usersToday = 0;
+  int projectsToday = 0;
+  int feedbackToday = 0;
+  int activityToday = 0;
+
+  List<Map<String, dynamic>> activityList = [];
 
   @override
   void initState() {
     super.initState();
+
+    // FIX #2 – Prevent flashing animation replay
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1),
     )..forward();
+
     _loadAdminStats();
     _loadRecentActivity();
-    Timer.periodic(const Duration(seconds: 5), (_) {
+
+    // FIX #1 – Properly stored periodic timer
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _loadLiveMetrics();
       _loadRecentActivity();
     });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel(); // <-- FIX #1
     _controller.dispose();
     super.dispose();
   }
 
-  List<Map<String, dynamic>> activityList = [];
-
   Future<void> _loadRecentActivity() async {
     final db = DBHelper();
     activityList = await db.getRecentActivities();
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
-  String _timeAgo(String isoTime) {
-    final time = DateTime.parse(isoTime);
+  String _timeAgo(String iso) {
+    final time = DateTime.parse(iso);
     final diff = DateTime.now().difference(time);
-
-    if (diff.inSeconds < 60) return "just now";
+    if (diff.inMinutes < 1) return "just now";
     if (diff.inMinutes < 60) return "${diff.inMinutes} min ago";
     if (diff.inHours < 24) return "${diff.inHours} hr ago";
     return "${diff.inDays} days ago";
   }
 
-void _showAdminLogoutDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      backgroundColor: const Color(0xFF1E1E22),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: const Text(
-        "Logout Admin?",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-      ),
-      content: const Text(
-        "Are you sure you want to logout from the admin panel?",
-        style: TextStyle(color: Colors.white70),
-      ),
-      actions: [
-        TextButton(
-          child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        TextButton(
-          child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
-          onPressed: () async {
-            Navigator.pop(context);
-
-            // Clear admin session (customize as needed)
-            // Example: SharedPreferences or provider
-            // final sp = await SharedPreferences.getInstance();
-            // await sp.remove("admin_login");
-
-            // Navigate out of admin panel
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              "/adminLogin", // <-- Change route to your admin login screen
-              (_) => false,
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
-  void _showExitDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            "Exit Xynapse?",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: const Text("Are you sure you want to close the app?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.blueAccent),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // close dialog
-                Future.delayed(const Duration(milliseconds: 100), () {
-                  SystemNavigator.pop(); // <--- REAL APP EXIT
-                });
-              },
-              child: const Text(
-                "Exit",
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+  Future<void> _loadLiveMetrics() async {
+    final db = DBHelper();
+    usersToday = await db.countNewUsersToday();
+    projectsToday = await db.countNewProjectsToday();
+    feedbackToday = await db.countFeedbackToday();
+    activityToday = await db.countActivityToday();
+    if (mounted) setState(() {});
   }
 
-  void _loadAdminStats() async {
+  Future<void> _loadAdminStats() async {
     final db = DBHelper();
-
     totalUsers = await db.countUsers();
     totalProjects = await db.countProjects();
-    pending = await db.countPendingProjects();
     feedbackCount = await db.countFeedback();
-
-    setState(() {});
+    _loadLiveMetrics();
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _showExitDialog(context);
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
+
         backgroundColor: const Color(0xFF0E0E12),
-
-        appBar: AppBar(
-  elevation: 0,
-  backgroundColor: const Color(0xFF151518),
-  title: Text(
-    "Xynapse Admin Panel",
-    style: GoogleFonts.spaceGrotesk(
-      color: Colors.white,
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-  actions: [
-    Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: GestureDetector(
-        onTap: () => _showAdminLogoutDialog(context),
-        child: CircleAvatar(
-          radius: 18,
-          backgroundColor: Colors.amberAccent.withValues(alpha: 0.3),
-          child: const Icon(
-            Icons.admin_panel_settings_rounded,
-            color: Colors.amberAccent,
-            size: 22,
-          ),
-        ),
-      ),
-    ),
-  ],
-),
-
-
+        appBar: _buildAppBar(),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // TITLE
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Dashboard Overview",
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
+              _buildTitle("Dashboard Overview"),
               const SizedBox(height: 20),
-
-              // DASHBOARD GRID
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  children: [
-                    _buildDashboardActionCard(
-                      title: "Registered Users",
-                      icon: Icons.people_alt_rounded,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/admin/users');
-                      },
-                    ),
-
-                    _buildDashboardActionCard(
-                      title: "Projects Submitted",
-                      icon: Icons.folder_copy_rounded,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/admin/projects');
-                      },
-                    ),
-
-                    _buildDashboardCard(
-                      title: "Pending Approvals",
-                      value: pending.toString(),
-                      icon: Icons.pending_actions_rounded,
-                    ),
-
-                    _buildDashboardActionCard(
-                      title: "Feedback Messages",
-                      icon: Icons.message_rounded,
-                      onTap: () {
-                        Navigator.pushNamed(context, '/admin/feedback').then((
-                          _,
-                        ) {
-                          _loadRecentActivity(); // refresh admin screen
-                          _loadAdminStats(); // update counts
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
+              Expanded(child: _dashboardGrid(context)),
+              const SizedBox(height: 12),
+              _buildTitle("Recent Activity"),
               const SizedBox(height: 10),
-
-              // RECENT ACTIVITY
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Recent Activity",
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              Expanded(
-                flex: 0,
-                child: Container(
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1C1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.amberAccent.withValues(alpha: 0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: activityList.isEmpty
-                        ? [
-                            Center(
-                              child: Text(
-                                "No recent activity",
-                                style: GoogleFonts.inter(color: Colors.white54),
-                              ),
-                            ),
-                          ]
-                        : activityList.map((a) {
-                            return _buildActivityTile(
-                              a["action"],
-                              _timeAgo(a["timestamp"]),
-                            );
-                          }).toList(),
-                  ),
-                ),
-              ),
+              _recentActivity(),
             ],
           ),
         ),
@@ -314,87 +117,89 @@ void _showAdminLogoutDialog(BuildContext context) {
     );
   }
 
-  Widget _buildDashboardCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    return ScaleTransition(
-      scale: CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A1C1E), Color(0xFF121315)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(
-            color: Colors.amberAccent.withValues(alpha: 0.4),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.amberAccent.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+  // UI ELEMENTS --------------------------------------------------------------
+
+  AppBar _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: const Color(0xFF151518),
+      title: Text(
+        "Xynapse Admin Panel",
+        style: GoogleFonts.spaceGrotesk(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
         ),
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.amberAccent, size: 34),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: GestureDetector(
+            onTap: () => _showAdminLogoutDialog(context),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.amberAccent.withValues(alpha:  0.3),
+              child: const Icon(
+                Icons.admin_panel_settings_rounded,
+                color: Colors.amberAccent,
+                size: 22,
               ),
             ),
-            Text(
-              title,
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
-            ),
-          ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Widget _buildDashboardActionCard({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _dashboardGrid(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      crossAxisSpacing: 15,
+      mainAxisSpacing: 15,
+      children: [
+        _actionCard("Registered Users", Icons.people_alt_rounded, () {
+          Navigator.pushNamed(context, '/admin/users');
+        }),
+        _actionCard("Projects Submitted", Icons.folder_copy_rounded, () {
+          Navigator.pushNamed(context, '/admin/projects');
+        }),
+        _actionCard("Live Metrics", Icons.speed_rounded, () {
+          Navigator.pushNamed(context, '/admin/liveMetrics');
+        }),
+        _actionCard("Feedback Messages", Icons.message_rounded, () {
+          Navigator.pushNamed(context, '/admin/feedback').then((_) {
+            _loadAdminStats();
+            _loadRecentActivity();
+          });
+        }),
+      ],
+    );
+  }
+
+  Widget _actionCard(String title, IconData icon, VoidCallback onTap) {
     return ScaleTransition(
       scale: CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1E1F22), Color(0xFF141417)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: Colors.amberAccent.withValues(alpha: 0.4),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amberAccent.withValues(alpha: 0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
+          decoration: _cardDecoration(),
           padding: const EdgeInsets.all(18),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -417,22 +222,148 @@ void _showAdminLogoutDialog(BuildContext context) {
     );
   }
 
-  Widget _buildActivityTile(String title, String time) {
+  Widget _recentActivity() {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1C1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amberAccent.withOpacity(0.2)),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: activityList.isEmpty
+            ? [
+                Center(
+                  child: Text(
+                    "No recent activity",
+                    style: GoogleFonts.inter(color: Colors.white54),
+                  ),
+                ),
+              ]
+            : activityList
+                  .map(
+                    (a) => _activityTile(a["action"], _timeAgo(a["timestamp"])),
+                  )
+                  .toList(),
+      ),
+    );
+  }
+
+  Widget _activityTile(String action, String time) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(Icons.circle, color: Colors.amberAccent, size: 12),
+          const Icon(Icons.circle, color: Colors.amberAccent, size: 12),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              title,
+              action,
               style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
             ),
           ),
           Text(
             time,
             style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      gradient: const LinearGradient(
+        colors: [Color(0xFF1E1F22), Color(0xFF141417)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      border: Border.all(
+        color: Colors.amberAccent.withOpacity(0.4),
+        width: 1.2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.amberAccent.withOpacity(0.2),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------------------------------
+
+  void _showAdminLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Logout Admin?",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Are you sure you want to logout?",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.redAccent),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                "/adminLogin",
+                (_) => false,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Exit Xynapse?",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("Are you sure you want to close the app?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.blueAccent),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Future.delayed(const Duration(milliseconds: 100), () {
+                SystemNavigator.pop();
+              });
+            },
+            child: const Text(
+              "Exit",
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),

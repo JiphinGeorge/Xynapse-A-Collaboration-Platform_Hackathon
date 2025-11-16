@@ -20,7 +20,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+
+    //  FIXED — prevent notifyListeners during build error
+    Future.microtask(() {
+      _loadUsers();
+    });
   }
 
   Future<void> _loadUsers() async {
@@ -130,13 +134,25 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1F1F1F),
+        backgroundColor: const Color(0xFF202428), // matches admin login theme
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.amberAccent, // clearly visible
+            size: 22,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           "Registered Users",
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: Colors.white, // visible text
+          ),
         ),
       ),
+
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Colors.amberAccent),

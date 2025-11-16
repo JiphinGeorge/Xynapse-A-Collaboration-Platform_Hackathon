@@ -39,8 +39,22 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
       backgroundColor: const Color(0xFF0E0E12),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF151518),
-        title: const Text("Feedback Messages"),
+        backgroundColor: const Color(0xFF202428), // Matches admin theme
+        elevation: 0,
+
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.amberAccent,
+            size: 22,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+
+        title: const Text(
+          "Feedback Messages",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
 
       body: feedbackList.isEmpty
@@ -59,10 +73,17 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                   key: ValueKey(f["id"]),
                   direction: DismissDirection.endToStart,
                   background: Container(
-                    color: Colors.redAccent,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     alignment: Alignment.centerRight,
-                    child: const Icon(Icons.delete, color: Colors.white),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 26,
+                    ),
                   ),
 
                   onDismissed: (_) async {
@@ -73,7 +94,9 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                   child: Card(
                     color: const Color(0xFF1A1C1E),
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
 
                     child: ListTile(
                       title: Text(
@@ -100,7 +123,9 @@ class _AdminFeedbackScreenState extends State<AdminFeedbackScreen> {
                           Text(
                             _timeAgo(f["created_at"]),
                             style: const TextStyle(
-                                color: Colors.white38, fontSize: 12),
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),

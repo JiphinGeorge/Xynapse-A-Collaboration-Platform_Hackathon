@@ -4,8 +4,10 @@ import 'models/project_model.dart';
 
 import 'screens/add_edit_project_screen.dart';
 import 'screens/admin/admin_feedback_screen.dart';
+import 'screens/admin/admin_live_metrics.dart';
 import 'screens/admin/admin_project_details.dart';
 import 'screens/admin/admin_projects_screen.dart';
+
 import 'screens/main_wrapper.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -28,6 +30,7 @@ class Routes {
   static const String adminLogin = '/adminLogin';
   static const String adminDashboard = '/adminDashboard';
   static const String adminUsers = '/admin/users';
+  static const String adminLiveMetrics = '/admin/liveMetrics';
 
   // Project Routes
   static const String addProject = '/addProject';
@@ -75,6 +78,10 @@ class AppRouter {
         final project = settings.arguments as Project;
         return MaterialPageRoute(
           builder: (_) => AdminProjectDetailsScreen(project: project),
+        );
+      case Routes.adminLiveMetrics:
+        return MaterialPageRoute(
+          builder: (_) => const AdminLiveMetricsScreen(),
         );
 
       // PROJECT ADD / EDIT

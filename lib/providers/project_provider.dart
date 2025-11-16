@@ -22,10 +22,9 @@ class ProjectProvider extends ChangeNotifier {
     await refreshAll();
   }
 
-  // ---------------- LOAD USERS ----------------
   Future<void> _loadUsers() async {
     users = await _db.getAllUsers();
-    notifyListeners();
+    // notifyListeners() removed (refreshAll handles notifications)
   }
 
   // ---------------- LOAD LOGIN ----------------
@@ -169,10 +168,7 @@ class ProjectProvider extends ChangeNotifier {
     if (uid == null) return;
 
     await _db.updateProfileImage(uid, newPath);
-
-    // Reload users from database
     await _loadUsers();
-
     // Refresh EVERYTHING so images update in all screens
     await refreshAll();
 
