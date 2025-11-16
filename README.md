@@ -1,10 +1,7 @@
-<h1 align="center">🚀 Xynapse – A Collaborative Project Platform</h1>
+# 🚀 Xynapse – A Collaborative Project Platform
 
-<p align="center">
-  A Flutter-based collaboration platform that allows users to create projects, join projects,
-  explore public projects, and work together seamlessly. Built for the 
-  <b>Execute Event Hackathon (Theme: Collaborative Projects)</b>.
-</p>
+A Flutter-based collaboration platform that allows users to create projects, join projects, explore public projects, and work together seamlessly.  
+Built for the **Execute Event Hackathon (Theme: Collaborative Projects)**.
 
 ---
 
@@ -38,8 +35,8 @@
 - Provider (State Management)
 
 ### **Backend / Local Database**
-- **SQLite** (via `sqflite` package)
-- Custom DBHelper with CRUD operations
+- **SQLite** (`sqflite` package)  
+- Custom DBHelper with CRUD  
 
 ### **Other Tools**
 - SharedPreferences  
@@ -65,6 +62,8 @@
 ---
 
 ## 📂 Folder Structure
+
+
 lib/
 │
 ├── db/
@@ -173,16 +172,15 @@ flutter pub get
 flutter run
 
 -----
-### **4.🧪 Test Users (Demo Data)**
-Email	Password	Role
-admin@xynapse.com
-	admin123	Admin
-jiphin@example.com
-	123456	User
-merin@example.com
-	123456	User
-ankith@example.com
-	123456	User
+###  **4. 🧪Test Users (Demo Data)**
+
+| Email              | Password | Role  |
+|--------------------|----------|-------|
+| admin@xynapse.com  | admin123 | Admin |
+| jiphin@example.com | 123456   | User  |
+| merin@example.com  | 123456   | User  |
+| ankith@example.com | 123456   | User  |
+
 
 ### **5.📸 Screenshots (Add later)**
 /assets/screenshots/
@@ -193,34 +191,35 @@ ankith@example.com
 └── live_metrics.png
 
 ---
-### **6.Future Improvements**
+## 🔮 Future Improvements
 
-Real-time collaboration using Firebase
+- Real-time collaboration using Firebase  
+- Chat module for project members  
+- Notifications for project updates  
+- Cloud storage for images  
+- Multi-role system (Mentor, Reviewer)  
+- Analytics & charts using `fl_chart`  
+- Dark/light theme switch  
 
-Chat module for project members
+---
 
-Notifications for project updates
+## 📜 License
 
-Cloud storage for images
-
-Multi-role system (Mentor, Reviewer)
-
-Analytics & charts using fl_chart
-
-Dark/light theme switch
-
-📜 License
-
-This project is licensed under the MIT License.
-
+This project is licensed under the **MIT License**.
 Copyright (c) 2025 Jiphin George & Team
 Permission is hereby granted, free of charge, to any person obtaining a copy...
 
+---
 
-🏆 Credits
+## 🏆 Credits
 
-Developed by Jiphin George & Team
-Built during Execute Event Hackathon — 2025
+Developed by **Jiphin George & Team**  
+Built during **Execute Event Hackathon — 2025**
 
-⭐ If you like this project, please consider starring the GitHub repo:
-👉 https://github.com/JiphinGeorge/Xynapse-A-Collaboration-Platform_Hackathon
+---
+
+## ⭐ Support the Project
+
+If you like this project, please consider **starring the GitHub repo**:
+
+👉 **https://github.com/JiphinGeorge/Xynapse-A-Collaboration-Platform_Hackathon**
