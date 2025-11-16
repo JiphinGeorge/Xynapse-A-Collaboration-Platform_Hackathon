@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import 'package:xynapse/screens/project_search_filter.dart';
 import '../providers/project_provider.dart';
 import 'package:flutter/services.dart';
-import '../app_router.dart'; 
+import '../app_router.dart';
+import 'dart:io';
+import '../models/user_model.dart';
 
 class UserHomeScreen extends StatefulWidget {
   const UserHomeScreen({super.key});
@@ -210,19 +212,42 @@ class _UserHomeScreenState extends State<UserHomeScreen>
                               ),
                             ],
                           ),
-                          child: CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.2,
-                            ),
-                            child: Text(
-                              provider.currentUserInitial,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          child: Consumer<ProjectProvider>(
+                            builder: (context, prov, _) {
+                              final uid = prov.currentUserId;
+                              final user = prov.users.firstWhere(
+                                (u) => u.id == uid,
+                                orElse: () => AppUser(
+                                  id: 0,
+                                  name: "Guest",
+                                  email: "guest@xynapse.dev",
+                                  password: "-",
+                                ),
+                              );
+
+                              final hasImg =
+                                  user.profileImage != null &&
+                                  user.profileImage!.isNotEmpty &&
+                                  File(user.profileImage!).existsSync();
+
+                              return CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.white.withValues(alpha:   0.2),
+                                backgroundImage: hasImg
+                                    ? FileImage(File(user.profileImage!))
+                                    : null,
+                                child: !hasImg
+                                    ? Text(
+                                        user.name[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : null,
+                              );
+                            },
                           ),
                         ),
                       ),

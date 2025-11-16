@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +7,7 @@ import '../models/project_model.dart';
 import 'package:xynapse/utils/fade_route.dart';
 import 'package:xynapse/screens/project_details_screen.dart';
 import 'package:xynapse/screens/profile_screen.dart';
-
+import '../models/user_model.dart'; 
 class CollaborationScreen extends StatelessWidget {
   const CollaborationScreen({super.key});
 
@@ -45,7 +46,7 @@ class CollaborationScreen extends StatelessWidget {
               ),
 
               title: Padding(
-                padding: const EdgeInsets.only(left: 4), // cleaner left spacing
+                padding: const EdgeInsets.only(left: 4),
                 child: Text(
                   "Collaborations",
                   style: GoogleFonts.montserrat(
@@ -79,28 +80,57 @@ class CollaborationScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.white.withOpacity(0.8),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
+                            color: Colors.black.withOpacity(0.25),
                             blurRadius: 6,
                             offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(
-                          provider.currentUserInitial,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+
+                      // -------- Avatar: listens to provider and shows image if present
+                      child: Consumer<ProjectProvider>(
+                        builder: (context, prov, _) {
+                          final uid = prov.currentUserId;
+                          final user = prov.users.firstWhere(
+                            (u) => u.id == uid,
+                            orElse: () => AppUser(
+                              id: 0,
+                              name: "Guest",
+                              email: "guest@xynapse.dev",
+                              password: "-",
+                            ),
+                          );
+
+                          return CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundImage:
+                                (user.profileImage != null &&
+                                    user.profileImage!.isNotEmpty &&
+                                    File(user.profileImage!).existsSync())
+                                ? FileImage(File(user.profileImage!))
+                                : null,
+                            child:
+                                (user.profileImage == null ||
+                                    user.profileImage!.isEmpty)
+                                ? Text(
+                                    user.name.isNotEmpty
+                                        ? user.name[0].toUpperCase()
+                                        : "?",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -111,7 +141,7 @@ class CollaborationScreen extends StatelessWidget {
                 preferredSize: const Size.fromHeight(2),
                 child: Container(
                   height: 1.5,
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: Colors.white.withOpacity(0.15),
                 ),
               ),
             ),
@@ -159,12 +189,12 @@ class CollaborationScreen extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: Colors.white.withOpacity(0.06),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.30),
+                color: Colors.black.withOpacity(0.30),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),

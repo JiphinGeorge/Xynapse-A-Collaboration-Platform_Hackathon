@@ -8,6 +8,8 @@ import 'package:xynapse/utils/fade_route.dart';
 import 'package:xynapse/screens/project_details_screen.dart';
 import 'package:xynapse/screens/add_edit_project_screen.dart';
 import 'package:xynapse/screens/profile_screen.dart';
+import 'dart:io';
+import '../models/user_model.dart';
 
 class MyProjectsScreen extends StatelessWidget {
   const MyProjectsScreen({super.key});
@@ -92,17 +94,42 @@ class MyProjectsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(
-                          provider.currentUserInitial,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      child: Consumer<ProjectProvider>(
+                        builder: (context, prov, _) {
+                          final uid = prov.currentUserId;
+                          final user = prov.users.firstWhere(
+                            (u) => u.id == uid,
+                            orElse: () => AppUser(
+                              id: 0,
+                              name: "Guest",
+                              email: "guest@xynapse.dev",
+                              password: "-",
+                            ),
+                          );
+
+                          final hasImage =
+                              user.profileImage != null &&
+                              user.profileImage!.isNotEmpty &&
+                              File(user.profileImage!).existsSync();
+
+                          return CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withValues (alpha:  0.2),
+                            backgroundImage: hasImage
+                                ? FileImage(File(user.profileImage!))
+                                : null,
+                            child: !hasImage
+                                ? Text(
+                                    user.name[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                          );
+                        },
                       ),
                     ),
                   ),
