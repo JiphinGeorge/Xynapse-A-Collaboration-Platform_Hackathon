@@ -58,6 +58,50 @@ class _AdminDashboardState extends State<AdminDashboard>
     return "${diff.inDays} days ago";
   }
 
+void _showAdminLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      backgroundColor: const Color(0xFF1E1E22),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: const Text(
+        "Logout Admin?",
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      content: const Text(
+        "Are you sure you want to logout from the admin panel?",
+        style: TextStyle(color: Colors.white70),
+      ),
+      actions: [
+        TextButton(
+          child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        TextButton(
+          child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+          onPressed: () async {
+            Navigator.pop(context);
+
+            // Clear admin session (customize as needed)
+            // Example: SharedPreferences or provider
+            // final sp = await SharedPreferences.getInstance();
+            // await sp.remove("admin_login");
+
+            // Navigate out of admin panel
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              "/adminLogin", // <-- Change route to your admin login screen
+              (_) => false,
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
   void _showExitDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -120,31 +164,35 @@ class _AdminDashboardState extends State<AdminDashboard>
         backgroundColor: const Color(0xFF0E0E12),
 
         appBar: AppBar(
-          elevation: 0,
-          backgroundColor: const Color(0xFF151518),
-          title: Text(
-            "Xynapse Admin Panel",
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+  elevation: 0,
+  backgroundColor: const Color(0xFF151518),
+  title: Text(
+    "Xynapse Admin Panel",
+    style: GoogleFonts.spaceGrotesk(
+      color: Colors.white,
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: GestureDetector(
+        onTap: () => _showAdminLogoutDialog(context),
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: Colors.amberAccent.withValues(alpha: 0.3),
+          child: const Icon(
+            Icons.admin_panel_settings_rounded,
+            color: Colors.amberAccent,
+            size: 22,
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.amberAccent.withValues(alpha: 0.3),
-                child: const Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: Colors.amberAccent,
-                  size: 22,
-                ),
-              ),
-            ),
-          ],
         ),
+      ),
+    ),
+  ],
+),
+
 
         body: Padding(
           padding: const EdgeInsets.all(16),

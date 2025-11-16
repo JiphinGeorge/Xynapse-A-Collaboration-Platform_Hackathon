@@ -5,6 +5,7 @@ import '../providers/project_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../app_router.dart';
 import '../../db/db_helper.dart';
+import '../models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,144 +16,143 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _fadeController;
+  late AnimationController _fadeCtrl;
   late Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
+    _fadeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
     );
-    _fade = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _fadeController.forward();
+    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic);
+
+    // start immediately — prevents flash
+    _fadeCtrl.value = 1.0;
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
-  // feedback dialogue
+  // ---------------- SEND FEEDBACK ----------------
   void _openFeedbackDialog(BuildContext context, int userId) {
     final msgC = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (_) {
-        return AlertDialog(
-          backgroundColor: Colors.black.withValues(alpha: 0.8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: Text(
-            "Send Feedback",
-            style: GoogleFonts.poppins(color: Colors.white),
-          ),
-          content: TextField(
-            controller: msgC,
-            maxLines: 4,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: "Type your feedback...",
-              hintStyle: const TextStyle(color: Colors.white54),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha:  0.07),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1F23),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Send Feedback",
+          style: GoogleFonts.poppins(color: Colors.white),
+        ),
+        content: TextField(
+          controller: msgC,
+          maxLines: 4,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Type your feedback...",
+            hintStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.07),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (msgC.text.trim().isEmpty) return;
+
+              await DBHelper().insertFeedback(userId, msgC.text.trim());
+
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Feedback submitted")),
+              );
+            },
+            child: const Text(
+              "Submit",
+              style: TextStyle(color: Colors.greenAccent),
             ),
-            TextButton(
-              onPressed: () async {
-                if (msgC.text.trim().isEmpty) return;
-                await DBHelper().insertFeedback(userId, msgC.text.trim());
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Feedback submitted")),
-                );
-              },
-              child: const Text(
-                "Submit",
-                style: TextStyle(color: Colors.greenAccent),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 
-  // LOGOUT DIALOG
-  void _confirmLogout() {
+  // ---------------- LOGOUT ----------------
+  void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) {
-        return AlertDialog(
-          backgroundColor: Colors.black.withValues(alpha:  0.85),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1F23),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Logout", style: TextStyle(color: Colors.white)),
+        content: const Text(
+          "Do you want to logout?",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+            onPressed: () => Navigator.pop(context),
           ),
-          title: const Text("Logout", style: TextStyle(color: Colors.white)),
-          content: const Text(
-            "Do you want to logout?",
-            style: TextStyle(color: Colors.white70),
+          TextButton(
+            child: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.redAccent),
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final sp = await SharedPreferences.getInstance();
+              await sp.remove("current_user");
+
+              // set current user to 0
+              await Provider.of<ProjectProvider>(
+                context,
+                listen: false,
+              ).setCurrentUser(0);
+
+              // redirect to login
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                Routes.login,
+                (_) => false,
+              );
+            },
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-
-                final sp = await SharedPreferences.getInstance();
-                await sp.remove("current_user");
-
-                Provider.of<ProjectProvider>(
-                  context,
-                  listen: false,
-                ).setCurrentUser(0);
-
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  Routes.login,
-                  (_) => false,
-                );
-              },
-              child: const Text(
-                "Logout",
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
+  // ---------------- PROFILE TILE ----------------
   Widget _infoTile(String label, String value, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha:  0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha:  0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:  0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -167,7 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 label,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 value,
                 style: const TextStyle(
@@ -183,86 +183,129 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ---------------- SCREEN UI ----------------
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ProjectProvider>(context);
+    final uid = prov.currentUserId ?? 0;
+
+    if (uid == 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, Routes.login);
+      });
+      return const SizedBox.shrink();
+    }
+
+    // Get logged-in user safely
     final user = prov.users.firstWhere(
-      (u) => u.id == prov.currentUserId,
-      orElse: () => throw "",
+      (u) => u.id == uid,
+      orElse: () => AppUser(
+        id: 0,
+        name: "Guest",
+        email: "guest@xynapse.dev",
+        password: "-",
+      ),
     );
 
     return FadeTransition(
       opacity: _fade,
-      child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-
-          /// SAME LOGIN GRADIENT
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF141E30), Color(0xFF0E3D72)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBodyBehindAppBar: true, // Prevent flash
 
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  // TITLE
-                  Text(
-                    "My Profile",
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
+          body: SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  elevation: 0,
+                  expandedHeight: 40,
+                  flexibleSpace: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 25),
-
-                  // GLASS PANEL
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha:  0.08),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha:  0.2)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha:  0.25),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
+                  centerTitle: true,
+                  title: Text(
+                    "My Profile",
+                    style: GoogleFonts.montserrat(
+                      fontSize: 24,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                      shadows: const [
+                        Shadow(
+                          color: Colors.black54,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
+                  ),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(2),
+                    child: Container(
+                      height: 1.5,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ),
+
+                // ---------------- BODY ----------------
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
+                        // AVATAR
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white.withValues(alpha:  0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               width: 2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: CircleAvatar(
                             radius: 50,
-                            backgroundColor: Colors.white.withValues(alpha:  0.1),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.15,
+                            ),
                             child: Text(
-                              user.name[0].toUpperCase(),
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : "?",
                               style: const TextStyle(
-                                fontSize: 34,
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 20),
+
                         Text(
                           user.name,
                           style: GoogleFonts.poppins(
@@ -278,46 +321,43 @@ class _ProfileScreenState extends State<ProfileScreen>
                             fontSize: 15,
                           ),
                         ),
+
                         const SizedBox(height: 25),
 
                         _infoTile("User ID", user.id.toString(), Icons.badge),
                         _infoTile(
                           "My Projects",
                           prov.myProjects.length.toString(),
-                          Icons.folder_open,
+                          Icons.folder,
                         ),
                         _infoTile(
                           "Collaborations",
                           prov.collaborations.length.toString(),
-                          Icons.group,
+                          Icons.groups,
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 20),
 
-                        // FEEDBACK BUTTON
-                        _gradientButton(
+                        _glassButton(
                           icon: Icons.feedback_outlined,
                           text: "Send Feedback",
                           onTap: () => _openFeedbackDialog(context, user.id!),
-                          colors: const [Color(0xFF00C9FF), Color(0xFF92FE9D)],
                         ),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
-                        // LOGOUT BUTTON
-                        _gradientButton(
+                        _glassButton(
                           icon: Icons.logout,
                           text: "Logout",
-                          onTap: _confirmLogout,
-                          colors: const [Color(0xFFE53935), Color(0xFFFF7043)],
+                          onTap: () => _confirmLogout(context),
                         ),
+
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 40),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -325,24 +365,26 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _gradientButton({
+  Widget _glassButton({
     required IconData icon,
     required String text,
     required VoidCallback onTap,
-    required List<Color> colors,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors),
+          color: Colors.white.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.25),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: colors.first.withValues(alpha:  0.4),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],

@@ -12,63 +12,80 @@ class ProjectProvider extends ChangeNotifier {
   List<Project> collaborations = [];
   List<AppUser> users = [];
   List<Project> publicProjects = [];
-  // ------------------------------------------------------------
-  // PUBLIC PROJECTS (from other users)
-  // ------------------------------------------------------------
-  List<Project> get allPublicProjects {
-    return projects
-        .where((p) => p.isPublic == 1 && p.creatorId != currentUserId)
-        .toList();
-  }
 
-  int currentUserId = 0; // Updated (default is 0 → no user)
+  int? currentUserId;  // nullable until user logs in
 
+  // ---------------- INIT ----------------
   Future<void> init() async {
     await _loadUsers();
     await _loadPrefs();
     await refreshAll();
   }
 
-  // --- Load all users from SQLite
+  // ---------------- LOAD USERS ----------------
   Future<void> _loadUsers() async {
     users = await _db.getAllUsers();
     notifyListeners();
   }
 
-  // --- Load logged-in user from SharedPrefs
+  // ---------------- LOAD LOGIN ----------------
   Future<void> _loadPrefs() async {
     final sp = await SharedPreferences.getInstance();
-    currentUserId = sp.getInt('current_user') ?? 0;
+    currentUserId = sp.getInt('current_user'); // returns null if not found
   }
 
-  // --- Change logged-in user
-  Future<void> setCurrentUser(int id) async {
-    currentUserId = id;
-    final sp = await SharedPreferences.getInstance();
-    await sp.setInt('current_user', id);
+  // ---------------- SET LOGIN ----------------
+ Future<void> setCurrentUser(int id) async {
+  currentUserId = id;
 
+  final sp = await SharedPreferences.getInstance();
+  await sp.setInt('current_user', id);
+
+  // When logging out (id == 0), do NOT refreshAll()
+  if (id != 0) {
     await refreshAll();
-    notifyListeners();
   }
 
-  // --- Refresh all dashboard/project data
+  notifyListeners();
+}
+
+
+  // ---------------- INITIAL LETTER ----------------
+  String get currentUserInitial {
+    final uid = currentUserId;
+    if (uid == null) return "?";
+
+    try {
+      final user = users.firstWhere((u) => u.id == uid);
+      return user.name.isNotEmpty ? user.name[0].toUpperCase() : "?";
+    } catch (_) {
+      return "?";
+    }
+  }
+
+  // ---------------- REFRESH EVERYTHING ----------------
   Future<void> refreshAll() async {
-    if (currentUserId == 0) return;
+    final uid = currentUserId; // IMPORTANT: local variable promotion
+
+    if (uid == null || uid == 0) {
+      myProjects = [];
+      collaborations = [];
+      publicProjects = [];
+      notifyListeners();
+      return;
+    }
 
     await _loadUsers();
     projects = await _db.getAllProjects();
-    myProjects = await _db.getProjectsByCreator(currentUserId);
+    myProjects = await _db.getProjectsByCreator(uid);
+    collaborations = await _db.getCollaborationsForUser(uid);
 
-    // Collaborative projects
-    collaborations = await _db.getCollaborationsForUser(currentUserId);
-
-    // ⭐ Public projects (is_public == 1)
     publicProjects = projects.where((p) => p.isPublic == 1).toList();
 
     notifyListeners();
   }
 
-  // --- Create project & assign members
+  // ---------------- ADD PROJECT ----------------
   Future<int> addProject(Project p, List<int> memberIds) async {
     final id = await _db.insertProject(p);
 
@@ -80,30 +97,35 @@ class ProjectProvider extends ChangeNotifier {
     return id;
   }
 
-  // --- Join project
+  // ---------------- JOIN PROJECT ----------------
   Future<void> joinProject(int projectId) async {
-    await _db.addCollaboration(projectId, currentUserId);
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    await _db.addCollaboration(projectId, uid);
     await refreshAll();
   }
 
-  // --- Leave project
+  // ---------------- LEAVE PROJECT ----------------
   Future<void> leaveProject(int projectId) async {
-    await _db.removeCollaboration(projectId, currentUserId);
+    final uid = currentUserId;
+    if (uid == null) return;
+
+    await _db.removeCollaboration(projectId, uid);
     await refreshAll();
   }
 
-  // --- Get project members
+  // ---------------- GET MEMBERS ----------------
   Future<List<AppUser>> getMembers(int projectId) async {
     return await _db.getProjectMembers(projectId);
   }
 
-  // --- Delete project
+  // ---------------- DELETE PROJECT ----------------
   Future<void> deleteProject(int projectId) async {
     await _db.deleteProject(projectId);
     await refreshAll();
   }
 
-  // Update existing project
   // ---------------- UPDATE PROJECT ----------------
   Future<void> updateProject(Project p, List<int> memberIds) async {
     await _db.updateProject(p);
@@ -111,36 +133,35 @@ class ProjectProvider extends ChangeNotifier {
     await refreshAll();
   }
 
-  List<Project> getCollabFiltered(String q, String cat) {
-    return collaborations.where((p) {
-      return _filter(p, q, cat);
-    }).toList();
-  }
+  // ---------------- FILTERS ----------------
+  List<Project> getCollabFiltered(String q, String cat) =>
+      collaborations.where((p) => _filter(p, q, cat)).toList();
 
-  List<Project> getMyFiltered(String q, String cat) {
-    return myProjects.where((p) {
-      return _filter(p, q, cat);
-    }).toList();
-  }
+  List<Project> getMyFiltered(String q, String cat) =>
+      myProjects.where((p) => _filter(p, q, cat)).toList();
 
-  List<Project> getPublicFiltered(String q, String cat) {
-    return publicProjects.where((p) {
-      return _filter(p, q, cat);
-    }).toList();
-  }
-
-  // ------------------------------------------------------------
-  // ALIAS: fetchAllProjects()   (Used by Home Screen refresh)
-  // ------------------------------------------------------------
-  Future<void> fetchAllProjects() async {
-    await refreshAll();
-  }
+  List<Project> getPublicFiltered(String q, String cat) =>
+      publicProjects.where((p) => _filter(p, q, cat)).toList();
 
   bool _filter(Project p, String q, String cat) {
     final matchTitle = p.title.toLowerCase().contains(q.toLowerCase());
     final matchCat =
-        (cat == "All") || (p.category.toLowerCase() == cat.toLowerCase());
-
+        cat == "All" || p.category.toLowerCase() == cat.toLowerCase();
     return matchTitle && matchCat;
+  }
+
+  // ---------------- FETCH ALL ----------------
+  Future<void> fetchAllProjects() async {
+    await refreshAll();
+  }
+
+  // ---------------- PUBLIC PROJECTS (READ ONLY) ----------------
+  List<Project> get allPublicProjects {
+    final uid = currentUserId;
+    if (uid == null) return [];
+
+    return projects
+        .where((p) => p.isPublic == 1 && p.creatorId != uid)
+        .toList();
   }
 }

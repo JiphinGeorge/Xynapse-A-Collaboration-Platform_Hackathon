@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../app_router.dart';
 import '../../db/db_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -58,10 +59,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _login() async {
-  final email = _emailController.text.trim();
-  final password = _passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
- if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       _showAnimatedSnackBar(
         "Please enter both email and password",
         color: const Color.fromARGB(255, 5, 79, 30),
@@ -69,39 +70,40 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-  setState(() => _isLoggingIn = true);
+    setState(() => _isLoggingIn = true);
 
-  await Future.delayed(const Duration(milliseconds: 400));
+    await Future.delayed(const Duration(milliseconds: 400));
 
-  // 🔥 REAL SQLite login
-  final db = DBHelper();
-  final user = await db.loginUser(email, password);
+    // 🔥 REAL SQLite login
+    final db = DBHelper();
+    final user = await db.loginUser(email, password);
 
-  setState(() => _isLoggingIn = false);
+    setState(() => _isLoggingIn = false);
 
-  if (user == null) {
-    _showAnimatedSnackBar(
-      "Invalid email or password",
-      color: Colors.redAccent,
-    );
-    return;
+    if (user == null) {
+      _showAnimatedSnackBar(
+        "Invalid email or password",
+        color: Colors.redAccent,
+      );
+      return;
+    }
+
+    // 🔥 Save user session
+    final sp = await SharedPreferences.getInstance();
+    await sp.setInt('current_user', user.id!);
+
+    // ⭐ Tell Provider who is logged in
+    // (THIS WAS MISSING)
+    Provider.of<ProjectProvider>(
+      context,
+      listen: false,
+    ).setCurrentUser(user.id!);
+
+    _showAnimatedSnackBar("Welcome, ${user.name}!", color: Colors.green);
+
+    // Go to Home
+    Navigator.pushReplacementNamed(context, Routes.home);
   }
-
-  // 🔥 Save user session
-final sp = await SharedPreferences.getInstance();
-await sp.setInt('current_user', user.id!);
-
-// ⭐ Tell Provider who is logged in
-// (THIS WAS MISSING)
-Provider.of<ProjectProvider>(context, listen: false)
-    .setCurrentUser(user.id!);
-
-_showAnimatedSnackBar("Welcome, ${user.name}!", color: Colors.green);
-
-// Go to Home
-Navigator.pushReplacementNamed(context, Routes.home);
-
-}
 
   void _showAnimatedSnackBar(String message, {required Color color}) {
     final snackBar = SnackBar(
@@ -482,69 +484,70 @@ Navigator.pushReplacementNamed(context, Routes.home);
       ),
     );
   }
+Widget _buildTextField({
+  required TextEditingController controller,
+  required String hint,
+  required IconData icon,
+  required FocusNode focusNode,
+  required bool isPassword,
+}) {
+  final isFocused = focusNode.hasFocus;
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    required FocusNode focusNode,
-    required bool isPassword,
-  }) {
-    final isFocused = focusNode.hasFocus;
+  // Theme colors
+  const Color themeBlue = Color(0xFF2575FC);
+  const Color themePurple = Color(0xFF6A11CB);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: isFocused
-            ? [
-                BoxShadow(
-                  color: Colors.cyanAccent.withValues(alpha: 0.5),
-                  blurRadius: 15,
-                  spreadRadius: 1,
-                ),
-              ]
-            : [],
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 250),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(
+        width: 1.8,
+        color: isFocused
+            ? themeBlue // focused color
+            : Colors.white24, // normal color
       ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        obscureText: isPassword ? _obscurePassword : false,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          prefixIcon: Icon(
-            icon,
-            color: isFocused ? Colors.cyanAccent : Colors.white70,
-          ),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                    color: isFocused ? Colors.cyanAccent : Colors.white70,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                )
-              : null,
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white60),
-          filled: true,
-          fillColor: isFocused
-              ? Colors.white.withValues(alpha: 0.2)
-              : Colors.white.withValues(alpha: 0.1),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 18,
-            horizontal: 20,
-          ),
+      color: isFocused
+          ? Colors.white.withValues(alpha: 0.10)
+          : Colors.white.withValues(alpha: 0.06),
+    ),
+    child: TextField(
+      controller: controller,
+      focusNode: focusNode,
+      obscureText: isPassword ? _obscurePassword : false,
+      style: const TextStyle(color: Colors.white),
+
+      decoration: InputDecoration(
+        prefixIcon: Icon(
+          icon,
+          color: isFocused ? themePurple : Colors.white70,
+        ),
+
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: isFocused ? themePurple : Colors.white70,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              )
+            : null,
+
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white54),
+
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 18,
+          horizontal: 20,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

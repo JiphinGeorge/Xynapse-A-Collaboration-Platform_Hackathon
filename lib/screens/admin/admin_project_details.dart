@@ -102,7 +102,7 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
                   Text(
                     p.description,
                     style: GoogleFonts.inter(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha:  0.9),
                       fontSize: 16,
                     ),
                   ),
@@ -116,7 +116,7 @@ class _AdminProjectDetailsScreenState extends State<AdminProjectDetailsScreen> {
                       color: const Color(0xFF1A1C1E),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.amberAccent.withOpacity(0.2),
+                        color: Colors.amberAccent.withValues(alpha: 0.2),
                       ),
                     ),
 

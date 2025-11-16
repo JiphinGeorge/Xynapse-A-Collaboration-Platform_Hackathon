@@ -11,9 +11,9 @@ import 'app_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ⭐ Load provider BEFORE the UI starts
+  //  Load provider BEFORE the UI starts
   final projectProvider = ProjectProvider();
-  await projectProvider.init(); // <-- MUST BE AWAITED
+  await projectProvider.init(); 
 
   runApp(
     MultiProvider(

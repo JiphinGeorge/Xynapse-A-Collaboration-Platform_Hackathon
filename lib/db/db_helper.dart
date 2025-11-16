@@ -22,7 +22,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -34,16 +34,18 @@ class DBHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     // USERS TABLE
-    await db.execute('''
-      CREATE TABLE users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT,
-        department TEXT,
-        created_at TEXT
-      )
-    ''');
+    // USERS TABLE
+await db.execute('''
+  CREATE TABLE users(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT,
+    created_at TEXT,
+    profile_image TEXT
+  )
+''');
+
 
     // ADMIN TABLE
     await db.execute('''
@@ -110,31 +112,31 @@ class DBHelper {
         name: 'Akhil',
         email: 'akhil@example.com',
         password: '123456',
-        department: "CSE",
+        
       ),
       AppUser(
         name: 'Merin',
         email: 'merin@example.com',
         password: '123456',
-        department: "CSE",
+        
       ),
       AppUser(
         name: 'Ankith',
         email: 'ankith@example.com',
         password: '123456',
-        department: "ECE",
+        
       ),
       AppUser(
         name: 'Sivalekshmi',
         email: 'sivalekshmi@example.com',
         password: '123456',
-        department: "EEE",
+        
       ),
       AppUser(
         name: 'Jiphin',
         email: 'jiphin@example.com',
         password: '123456',
-        department: "MCA",
+        
       ),
     ];
 
@@ -160,12 +162,24 @@ class DBHelper {
 
   // Handle upgrades
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute("ALTER TABLE users ADD COLUMN password TEXT;");
-      await db.execute("ALTER TABLE users ADD COLUMN department TEXT;");
-      await db.execute("ALTER TABLE users ADD COLUMN created_at TEXT;");
+  if (oldVersion < 2) {
+    await db.execute("ALTER TABLE users ADD COLUMN password TEXT;");
+    await db.execute("ALTER TABLE users ADD COLUMN department TEXT;");
+    await db.execute("ALTER TABLE users ADD COLUMN created_at TEXT;");
+  }
+
+  // New in version 3: profile_image column
+  if (oldVersion < 3) {
+    // Only add column if it doesn't exist — SQLite will error if column already exists.
+    // A safe approach: try-catch the ALTER and ignore error if column already present.
+    try {
+      await db.execute("ALTER TABLE users ADD COLUMN profile_image TEXT;");
+    } catch (e) {
+      // ignore - column may already exist on some DBs
     }
   }
+}
+
 
   // ----------------------------------------------------------------------
   //                           AUTH METHODS

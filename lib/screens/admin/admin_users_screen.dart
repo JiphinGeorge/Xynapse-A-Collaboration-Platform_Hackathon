@@ -52,7 +52,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           children: [
             _detailRow("Name", user.name),
             _detailRow("Email", user.email),
-            _detailRow("Department", user.department ?? "N/A"),
             _detailRow("Created At", user.createdAt.substring(0, 10)),
           ],
         ),

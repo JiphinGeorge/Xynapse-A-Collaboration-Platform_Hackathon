@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:xynapse/screens/profile_screen.dart';
 import 'models/project_model.dart';
 
 import 'screens/add_edit_project_screen.dart';
@@ -10,7 +11,6 @@ import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/admin_login_screen.dart';
-import 'screens/user_home_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/admin/admin_users_screen.dart';
 import 'screens/project_details_screen.dart';
@@ -20,6 +20,9 @@ class Routes {
   static const String login = '/login';
   static const String register = '/register';
   static const String home = '/home';
+
+  // Profile
+  static const String profile = '/profile';
 
   // Admin routes
   static const String adminLogin = '/adminLogin';
@@ -48,6 +51,9 @@ class AppRouter {
       // USER HOME
       case Routes.home:
         return MaterialPageRoute(builder: (_) => const MainWrapper());
+
+      case Routes.profile:
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
 
       // ADMIN
       case Routes.adminLogin:

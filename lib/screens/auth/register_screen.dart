@@ -120,7 +120,6 @@ class _RegisterScreenState extends State<RegisterScreen>
       name: name,
       email: email,
       password: password,
-      department: _selectedRole == "Admin" ? "Admin" : "User",
     );
 
     try {
@@ -349,35 +348,6 @@ Navigator.pushReplacementNamed(context, Routes.home);
 
                   const SizedBox(height: 20),
 
-                  // Role Dropdown
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedRole,
-                        dropdownColor: const Color(0xFF1A1A2E),
-                        style: GoogleFonts.inter(color: Colors.white),
-                        iconEnabledColor: Colors.cyanAccent,
-                        items: ['User', 'Admin']
-                            .map(
-                              (role) => DropdownMenuItem<String>(
-                                value: role,
-                                child: Text(role),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedRole = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 40),
 
                   // Register button

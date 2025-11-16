@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../app_router.dart';
 import 'package:lottie/lottie.dart';
 import 'auth/login_screen.dart';
 
