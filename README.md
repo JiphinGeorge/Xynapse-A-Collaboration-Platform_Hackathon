@@ -206,14 +206,16 @@ flutter run
 ## 📜 License
 
 This project is licensed under the **MIT License**.
-Copyright (c) 2025 Jiphin George & Team
+
+Copyright (c) 2025 Jiphin George 
+
 Permission is hereby granted, free of charge, to any person obtaining a copy...
 
 ---
 
 ## 🏆 Credits
 
-Developed by **Jiphin George & Team**  
+Developed by **Jiphin George**  
 Built during **Execute Event Hackathon — 2025**
 
 ---
