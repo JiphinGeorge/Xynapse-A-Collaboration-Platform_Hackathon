@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'models/project_model.dart';
 
 import 'screens/add_edit_project_screen.dart';
+import 'screens/admin/admin_feedback_screen.dart';
+import 'screens/admin/admin_project_details.dart';
+import 'screens/admin/admin_projects_screen.dart';
 import 'screens/main_wrapper.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -55,6 +58,18 @@ class AppRouter {
 
       case Routes.adminUsers:
         return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
+
+      case '/admin/feedback':
+        return MaterialPageRoute(builder: (_) => const AdminFeedbackScreen());
+
+      case '/admin/projects':
+        return MaterialPageRoute(builder: (_) => const AdminProjectsScreen());
+
+      case '/admin/projectDetails':
+        final project = settings.arguments as Project;
+        return MaterialPageRoute(
+          builder: (_) => AdminProjectDetailsScreen(project: project),
+        );
 
       // PROJECT ADD / EDIT
       case Routes.addProject:

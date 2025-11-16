@@ -5,6 +5,9 @@ import '../../app_router.dart';
 import '../../db/db_helper.dart';
 import '../../models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../providers/project_provider.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -123,18 +126,24 @@ class _RegisterScreenState extends State<RegisterScreen>
     try {
       final int userId = await db.registerUser(user);
 
-      if (!mounted) return;
+if (!mounted) return;
 
-      // Auto Login → Save userId to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt("current_user", userId);
+// Auto Login
+final prefs = await SharedPreferences.getInstance();
+await prefs.setInt("current_user", userId);
 
-      setState(() => _isRegistering = false);
+// ⭐ IMPORTANT: Update provider with new user
+final prov = Provider.of<ProjectProvider>(context, listen: false);
+await prov.setCurrentUser(userId);
+await prov.refreshAll();   // reload users + projects
 
-      _showAnimatedSnackBar("Welcome, $name! 🎉", color: Colors.green);
+setState(() => _isRegistering = false);
 
-      // Navigate to Home directly
-      Navigator.pushReplacementNamed(context, Routes.home);
+_showAnimatedSnackBar("Welcome, $name! 🎉", color: Colors.green);
+
+// Navigate to Home
+Navigator.pushReplacementNamed(context, Routes.home);
+
     } catch (e) {
       if (!mounted) return;
 

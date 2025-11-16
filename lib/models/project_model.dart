@@ -19,6 +19,29 @@ class Project {
     required this.createdAt,
   });
 
+  // -------------------------
+  Project copyWith({
+    int? id,
+    String? title,
+    String? description,
+    int? creatorId,
+    String? category,
+    String? status,
+    int? isPublic,
+    String? createdAt,
+  }) {
+    return Project(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      creatorId: creatorId ?? this.creatorId,
+      category: category ?? this.category,
+      status: status ?? this.status,
+      isPublic: isPublic ?? this.isPublic,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+  // -------------------------
   Map<String, dynamic> toMap() => {
     'id': id,
     'title': title,

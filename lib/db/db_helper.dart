@@ -173,6 +173,8 @@ class DBHelper {
 
   Future<int> registerUser(AppUser user) async {
     final db = await database;
+    await logActivity("New user registered: ${user.email}", userId: user.id);
+
     return await db.insert('users', user.toMap());
   }
 
@@ -183,6 +185,7 @@ class DBHelper {
       where: 'email = ? AND password = ?',
       whereArgs: [email, password],
     );
+    await logActivity("User logged in: $email");
 
     return res.isNotEmpty ? AppUser.fromMap(res.first) : null;
   }
@@ -194,6 +197,7 @@ class DBHelper {
       where: 'email = ? AND password = ?',
       whereArgs: [email, password],
     );
+    await logActivity("Admin logged in");
 
     return res.isNotEmpty;
   }
@@ -204,6 +208,11 @@ class DBHelper {
 
   Future<int> insertProject(Project project) async {
     final db = await database;
+    await logActivity(
+      "Project created: ${project.title}",
+      userId: project.creatorId,
+    );
+
     return await db.insert('projects', project.toMap());
   }
 
@@ -267,10 +276,15 @@ class DBHelper {
 
     if (exists.isNotEmpty) return 0;
 
-    return await db.insert('collaborations', {
+    int result = await db.insert('collaborations', {
       'project_id': projectId,
       'user_id': userId,
     });
+
+    // 🔥 LOG ACTIVITY
+    await logActivity("User $userId joined Project $projectId", userId: userId);
+
+    return result;
   }
 
   Future<int> removeCollaboration(int projectId, int userId) async {
@@ -284,8 +298,14 @@ class DBHelper {
 
   Future<int> deleteProject(int id) async {
     final db = await database;
+
     await db.delete('collaborations', where: 'project_id = ?', whereArgs: [id]);
-    return await db.delete('projects', where: 'id = ?', whereArgs: [id]);
+    int result = await db.delete('projects', where: 'id = ?', whereArgs: [id]);
+
+    // 🔥 LOG ACTIVITY
+    await logActivity("Project deleted (ID: $id)");
+
+    return result;
   }
 
   // ----------------------------------------------------------------------
@@ -358,43 +378,104 @@ class DBHelper {
     return res.isNotEmpty ? AppUser.fromMap(res.first) : null;
   }
 
-  // ---------------- UPDATE PROJECT ----------------
-Future<int> updateProject(Project p) async {
-  final db = await database;
-  return await db.update(
-    'projects',
-    p.toMap(),
-    where: 'id = ?',
-    whereArgs: [p.id],
-  );
-}
+  Future<int> updateProject(Project p) async {
+    final db = await database;
 
-// ---------------- GET COLLABORATORS ----------------
-Future<List<int>> getCollaboratorIds(int projectId) async {
-  final db = await database;
-  final res = await db.query(
-    'collaborations',
-    where: 'project_id = ?',
-    whereArgs: [projectId],
-  );
+    int result = await db.update(
+      'projects',
+      p.toMap(),
+      where: 'id = ?',
+      whereArgs: [p.id],
+    );
 
-  return res.map((e) => e['user_id'] as int).toList();
-}
+    // 🔥 LOG ACTIVITY
+    await logActivity("Project updated: ${p.title}", userId: p.creatorId);
 
-// ---------------- REPLACE COLLABORATORS ----------------
-Future<void> setCollaborators(int projectId, List<int> userIds) async {
-  final db = await database;
+    return result;
+  }
 
-  // delete old
-  await db.delete('collaborations', where: 'project_id = ?', whereArgs: [projectId]);
+  // ---------------- GET COLLABORATORS ----------------
+  Future<List<int>> getCollaboratorIds(int projectId) async {
+    final db = await database;
+    final res = await db.query(
+      'collaborations',
+      where: 'project_id = ?',
+      whereArgs: [projectId],
+    );
 
-  // add new
-  for (var uid in userIds) {
-    await db.insert('collaborations', {
-      'project_id': projectId,
-      'user_id': uid,
+    return res.map((e) => e['user_id'] as int).toList();
+  }
+
+  // ---------------- REPLACE COLLABORATORS ----------------
+  Future<void> setCollaborators(int projectId, List<int> userIds) async {
+    final db = await database;
+
+    // delete old
+    await db.delete(
+      'collaborations',
+      where: 'project_id = ?',
+      whereArgs: [projectId],
+    );
+
+    // add new
+    for (var uid in userIds) {
+      await db.insert('collaborations', {
+        'project_id': projectId,
+        'user_id': uid,
+      });
+    }
+  }
+
+  Future<void> logActivity(String action, {int? userId}) async {
+    final db = await database;
+
+    await db.insert("activity_logs", {
+      "action": action,
+      "user_id": userId ?? 0,
+      "timestamp": DateTime.now().toIso8601String(),
     });
   }
-}
 
+  Future<List<Map<String, dynamic>>> getRecentActivities() async {
+    final db = await database;
+
+    return await db.query("activity_logs", orderBy: "id DESC", limit: 20);
+  }
+
+  //Feedback method
+  Future<int> insertFeedback(int userId, String message) async {
+    final db = await database;
+
+    await logActivity("Feedback submitted", userId: userId);
+
+    return await db.insert("feedback", {
+      "user_id": userId,
+      "message": message,
+      "created_at": DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getAllFeedback() async {
+    final db = await database;
+
+    return await db.rawQuery('''
+    SELECT feedback.id, feedback.message, feedback.created_at,
+           users.name, users.email
+    FROM feedback
+    LEFT JOIN users ON feedback.user_id = users.id
+    ORDER BY feedback.id DESC
+  ''');
+  }
+
+  Future<int> deleteFeedback(int feedbackId) async {
+    final db = await database;
+
+    await logActivity("Feedback deleted (ID: $feedbackId)");
+
+    return await db.delete(
+      'feedback',
+      where: 'id = ?',
+      whereArgs: [feedbackId],
+    );
+  }
 }

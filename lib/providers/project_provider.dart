@@ -13,17 +13,15 @@ class ProjectProvider extends ChangeNotifier {
   List<AppUser> users = [];
   List<Project> publicProjects = [];
   // ------------------------------------------------------------
-// PUBLIC PROJECTS (from other users)
-// ------------------------------------------------------------
-List<Project> get allPublicProjects {
-  return projects.where(
-    (p) => p.isPublic == 1 && p.creatorId != currentUserId,
-  ).toList();
-}
+  // PUBLIC PROJECTS (from other users)
+  // ------------------------------------------------------------
+  List<Project> get allPublicProjects {
+    return projects
+        .where((p) => p.isPublic == 1 && p.creatorId != currentUserId)
+        .toList();
+  }
 
-
-
-  int currentUserId = 0;  // Updated (default is 0 → no user)
+  int currentUserId = 0; // Updated (default is 0 → no user)
 
   Future<void> init() async {
     await _loadUsers();
@@ -55,20 +53,20 @@ List<Project> get allPublicProjects {
 
   // --- Refresh all dashboard/project data
   Future<void> refreshAll() async {
-  if (currentUserId == 0) return;
+    if (currentUserId == 0) return;
 
-  projects = await _db.getAllProjects();
-  myProjects = await _db.getProjectsByCreator(currentUserId);
+    await _loadUsers();
+    projects = await _db.getAllProjects();
+    myProjects = await _db.getProjectsByCreator(currentUserId);
 
-  // Collaborative projects
-  collaborations = await _db.getCollaborationsForUser(currentUserId);
+    // Collaborative projects
+    collaborations = await _db.getCollaborationsForUser(currentUserId);
 
-  // ⭐ Public projects (is_public == 1)
-  publicProjects = projects.where((p) => p.isPublic == 1).toList();
+    // ⭐ Public projects (is_public == 1)
+    publicProjects = projects.where((p) => p.isPublic == 1).toList();
 
-  notifyListeners();
-}
-
+    notifyListeners();
+  }
 
   // --- Create project & assign members
   Future<int> addProject(Project p, List<int> memberIds) async {
@@ -106,45 +104,43 @@ List<Project> get allPublicProjects {
   }
 
   // Update existing project
-// ---------------- UPDATE PROJECT ----------------
-Future<void> updateProject(Project p, List<int> memberIds) async {
-  await _db.updateProject(p);
-  await _db.setCollaborators(p.id!, memberIds);
-  await refreshAll();
-}
+  // ---------------- UPDATE PROJECT ----------------
+  Future<void> updateProject(Project p, List<int> memberIds) async {
+    await _db.updateProject(p);
+    await _db.setCollaborators(p.id!, memberIds);
+    await refreshAll();
+  }
 
+  List<Project> getCollabFiltered(String q, String cat) {
+    return collaborations.where((p) {
+      return _filter(p, q, cat);
+    }).toList();
+  }
 
-List<Project> getCollabFiltered(String q, String cat) {
-  return collaborations.where((p) {
-    return _filter(p, q, cat);
-  }).toList();
-}
+  List<Project> getMyFiltered(String q, String cat) {
+    return myProjects.where((p) {
+      return _filter(p, q, cat);
+    }).toList();
+  }
 
-List<Project> getMyFiltered(String q, String cat) {
-  return myProjects.where((p) {
-    return _filter(p, q, cat);
-  }).toList();
-}
+  List<Project> getPublicFiltered(String q, String cat) {
+    return publicProjects.where((p) {
+      return _filter(p, q, cat);
+    }).toList();
+  }
 
-List<Project> getPublicFiltered(String q, String cat) {
-  return publicProjects.where((p) {
-    return _filter(p, q, cat);
-  }).toList();
-}
-// ------------------------------------------------------------
-// ALIAS: fetchAllProjects()   (Used by Home Screen refresh)
-// ------------------------------------------------------------
-Future<void> fetchAllProjects() async {
-  await refreshAll();
-}
+  // ------------------------------------------------------------
+  // ALIAS: fetchAllProjects()   (Used by Home Screen refresh)
+  // ------------------------------------------------------------
+  Future<void> fetchAllProjects() async {
+    await refreshAll();
+  }
 
-bool _filter(Project p, String q, String cat) {
-  final matchTitle = p.title.toLowerCase().contains(q.toLowerCase());
-  final matchCat = (cat == "All") ||
-      (p.category.toLowerCase() == cat.toLowerCase());
+  bool _filter(Project p, String q, String cat) {
+    final matchTitle = p.title.toLowerCase().contains(q.toLowerCase());
+    final matchCat =
+        (cat == "All") || (p.category.toLowerCase() == cat.toLowerCase());
 
-  return matchTitle && matchCat;
-}
-
-
+    return matchTitle && matchCat;
+  }
 }
