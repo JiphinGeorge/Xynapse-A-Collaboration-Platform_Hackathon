@@ -4,6 +4,20 @@ A Flutter-based collaboration platform that allows users to create projects, joi
 Built for the **Execute Event Hackathon (Theme: Collaborative Projects)**.
 
 ---
+## 📑 Table of Contents
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Core Requirements](#-core-hackathon-requirements--achieved-)
+- [Folder Structure](#-folder-structure)
+- [Database](#-sqlite-database-overview)
+- [Installation](#️-installation-guide)
+- [Test Users](#-test-users-demo-data)
+- [Screenshots](#-screenshots-gallery-view)
+- [Future Improvements](#-future-improvements)
+- [License](#-license)
+- [Credits](#-credits)
+
+---
 
 ## 📌 Features
 
@@ -62,7 +76,10 @@ Built for the **Execute Event Hackathon (Theme: Collaborative Projects)**.
 ---
 
 ## 📂 Folder Structure
-<img width="207" height="765" alt="image" src="https://github.com/user-attachments/assets/5d724c43-e7a1-4e6d-9a87-6a72706f2824" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/5d724c43-e7a1-4e6d-9a87-6a72706f2824" width="40%">
+</p>
+
 
 
 
