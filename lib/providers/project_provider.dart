@@ -164,4 +164,15 @@ class ProjectProvider extends ChangeNotifier {
         .where((p) => p.isPublic == 1 && p.creatorId != uid)
         .toList();
   }
+
+
+  Future<void> updateUserImage(String newPath) async {
+  final uid = currentUserId;
+  if (uid == null) return;
+
+  await _db.updateProfileImage(uid, newPath);
+  await _loadUsers();     // refresh user list
+  notifyListeners();
+}
+
 }

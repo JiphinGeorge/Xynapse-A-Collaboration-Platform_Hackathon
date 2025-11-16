@@ -35,7 +35,7 @@ class DBHelper {
   Future<void> _onCreate(Database db, int version) async {
     // USERS TABLE
     // USERS TABLE
-await db.execute('''
+    await db.execute('''
   CREATE TABLE users(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -45,7 +45,6 @@ await db.execute('''
     profile_image TEXT
   )
 ''');
-
 
     // ADMIN TABLE
     await db.execute('''
@@ -108,36 +107,15 @@ await db.execute('''
     // Insert Dummy Users
     // -------------------------------------------------------------------
     final users = [
-      AppUser(
-        name: 'Akhil',
-        email: 'akhil@example.com',
-        password: '123456',
-        
-      ),
-      AppUser(
-        name: 'Merin',
-        email: 'merin@example.com',
-        password: '123456',
-        
-      ),
-      AppUser(
-        name: 'Ankith',
-        email: 'ankith@example.com',
-        password: '123456',
-        
-      ),
+      AppUser(name: 'Akhil', email: 'akhil@example.com', password: '123456'),
+      AppUser(name: 'Merin', email: 'merin@example.com', password: '123456'),
+      AppUser(name: 'Ankith', email: 'ankith@example.com', password: '123456'),
       AppUser(
         name: 'Sivalekshmi',
         email: 'sivalekshmi@example.com',
         password: '123456',
-        
       ),
-      AppUser(
-        name: 'Jiphin',
-        email: 'jiphin@example.com',
-        password: '123456',
-        
-      ),
+      AppUser(name: 'Jiphin', email: 'jiphin@example.com', password: '123456'),
     ];
 
     for (var u in users) {
@@ -160,26 +138,26 @@ await db.execute('''
     await db.insert('collaborations', {'project_id': 1, 'user_id': 3});
   }
 
-  // Handle upgrades
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-  if (oldVersion < 2) {
-    await db.execute("ALTER TABLE users ADD COLUMN password TEXT;");
-    await db.execute("ALTER TABLE users ADD COLUMN department TEXT;");
-    await db.execute("ALTER TABLE users ADD COLUMN created_at TEXT;");
-  }
-
-  // New in version 3: profile_image column
-  if (oldVersion < 3) {
-    // Only add column if it doesn't exist — SQLite will error if column already exists.
-    // A safe approach: try-catch the ALTER and ignore error if column already present.
-    try {
-      await db.execute("ALTER TABLE users ADD COLUMN profile_image TEXT;");
-    } catch (e) {
-      // ignore - column may already exist on some DBs
+    if (oldVersion < 3) {
+      await _safeAddColumn(db, "users", "profile_image", "TEXT");
+      await _safeAddColumn(db, "users", "created_at", "TEXT");
     }
   }
-}
 
+  Future<void> _safeAddColumn(
+    Database db,
+    String table,
+    String column,
+    String type,
+  ) async {
+    final columns = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = columns.any((c) => c['name'] == column);
+
+    if (!exists) {
+      await db.execute('ALTER TABLE $table ADD COLUMN $column $type;');
+    }
+  }
 
   // ----------------------------------------------------------------------
   //                           AUTH METHODS
@@ -490,6 +468,20 @@ await db.execute('''
       'feedback',
       where: 'id = ?',
       whereArgs: [feedbackId],
+    );
+  }
+
+  // ----------------------------------------------------------------------
+  //                        PROFILE IMAGE
+  // ----------------------------------------------------------------------
+  Future<int> updateProfileImage(int userId, String path) async {
+    final db = await database;
+
+    return await db.update(
+      'users',
+      {'profile_image': path},
+      where: 'id = ?',
+      whereArgs: [userId],
     );
   }
 }

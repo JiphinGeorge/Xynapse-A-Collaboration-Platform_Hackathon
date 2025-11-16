@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../providers/project_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../providers/project_provider.dart';
 import '../app_router.dart';
 import '../../db/db_helper.dart';
 import '../models/user_model.dart';
@@ -27,72 +29,21 @@ class _ProfileScreenState extends State<ProfileScreen>
       duration: const Duration(milliseconds: 500),
     );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOutCubic);
-
-    // start immediately — prevents flash
-    _fadeCtrl.value = 1.0;
+    _fadeCtrl.value = 1;
   }
 
-  @override
-  void dispose() {
-    _fadeCtrl.dispose();
-    super.dispose();
+  // PICK IMAGE
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    final prov = Provider.of<ProjectProvider>(context, listen: false);
+    await prov.updateUserImage(picked.path);
+
+    setState(() {});
   }
 
-  // ---------------- SEND FEEDBACK ----------------
-  void _openFeedbackDialog(BuildContext context, int userId) {
-    final msgC = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1F1F23),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          "Send Feedback",
-          style: GoogleFonts.poppins(color: Colors.white),
-        ),
-        content: TextField(
-          controller: msgC,
-          maxLines: 4,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: "Type your feedback...",
-            hintStyle: const TextStyle(color: Colors.white54),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.07),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (msgC.text.trim().isEmpty) return;
-
-              await DBHelper().insertFeedback(userId, msgC.text.trim());
-
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Feedback submitted")),
-              );
-            },
-            child: const Text(
-              "Submit",
-              style: TextStyle(color: Colors.greenAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------- LOGOUT ----------------
+  // LOGOUT
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -116,17 +67,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             onPressed: () async {
               Navigator.pop(context);
-
               final sp = await SharedPreferences.getInstance();
               await sp.remove("current_user");
-
-              // set current user to 0
               await Provider.of<ProjectProvider>(
                 context,
                 listen: false,
               ).setCurrentUser(0);
 
-              // redirect to login
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 Routes.login,
@@ -139,18 +86,18 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ---------------- PROFILE TILE ----------------
+  // INFO TILE
   Widget _infoTile(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(18),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withValues(alpha:  0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha:  0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues( alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -183,20 +130,18 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ---------------- SCREEN UI ----------------
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ProjectProvider>(context);
     final uid = prov.currentUserId ?? 0;
 
     if (uid == 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, Routes.login);
-      });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Navigator.pushReplacementNamed(context, Routes.login),
+      );
       return const SizedBox.shrink();
     }
 
-    // Get logged-in user safely
     final user = prov.users.firstWhere(
       (u) => u.id == uid,
       orElse: () => AppUser(
@@ -219,8 +164,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          extendBodyBehindAppBar: true, // Prevent flash
-
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
@@ -244,62 +187,70 @@ class _ProfileScreenState extends State<ProfileScreen>
                       fontSize: 24,
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                      shadows: const [
-                        Shadow(
-                          color: Colors.black54,
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(2),
-                    child: Container(
-                      height: 1.5,
-                      color: Colors.white.withValues(alpha: 0.15),
                     ),
                   ),
                 ),
 
-                // ---------------- BODY ----------------
+                // BODY
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        // AVATAR
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                        // ---------------- AVATAR ----------------
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha:  0.8),
+                                width: 2,
                               ),
-                            ],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha:  0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.white.withValues(alpha:  0.12),
+                              backgroundImage:
+                                  (user.profileImage != null &&
+                                      user.profileImage!.isNotEmpty &&
+                                      File(user.profileImage!).existsSync())
+                                  ? FileImage(File(user.profileImage!))
+                                  : null,
+                              child:
+                                  (user.profileImage == null ||
+                                      user.profileImage!.isEmpty)
+                                  ? Text(
+                                      user.name[0].toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 36,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           ),
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.15,
-                            ),
-                            child: Text(
-                              user.name.isNotEmpty
-                                  ? user.name[0].toUpperCase()
-                                  : "?",
-                              style: const TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Text(
+                            "Change Photo",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha:  0.8),
+                              fontSize: 15,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
@@ -339,16 +290,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                         const SizedBox(height: 20),
 
                         _glassButton(
-                          icon: Icons.feedback_outlined,
                           text: "Send Feedback",
+                          icon: Icons.feedback_outlined,
                           onTap: () => _openFeedbackDialog(context, user.id!),
                         ),
 
                         const SizedBox(height: 12),
 
                         _glassButton(
-                          icon: Icons.logout,
                           text: "Logout",
+                          icon: Icons.logout,
                           onTap: () => _confirmLogout(context),
                         ),
 
@@ -366,8 +317,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _glassButton({
-    required IconData icon,
     required String text,
+    required IconData icon,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -375,19 +326,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha:  0.10),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.25),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.20),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.white.withValues( alpha: 0.25)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -404,6 +345,57 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // FEEDBACK DIALOG
+  void _openFeedbackDialog(BuildContext context, int userId) {
+    final msgC = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1F23),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          "Send Feedback",
+          style: GoogleFonts.poppins(color: Colors.white),
+        ),
+        content: TextField(
+          controller: msgC,
+          maxLines: 4,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Type your feedback...",
+            hintStyle: const TextStyle(color: Colors.white54),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha:  0.07),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.blue)),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (msgC.text.trim().isEmpty) return;
+
+              await DBHelper().insertFeedback(userId, msgC.text.trim());
+              Navigator.pop(context);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Feedback submitted")),
+              );
+            },
+            child: const Text(
+              "Submit",
+              style: TextStyle(color: Colors.greenAccent),
+            ),
+          ),
+        ],
       ),
     );
   }
