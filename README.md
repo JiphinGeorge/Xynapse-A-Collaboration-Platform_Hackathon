@@ -182,13 +182,56 @@ flutter run
 | ankith@example.com | 123456   | User  |
 
 
-### **5.📸 Screenshots (Add later)**
-/assets/screenshots/
-├── login.png
-├── home.png
-├── project_details.png
-├── admin_dashboard.png
-└── live_metrics.png
+## 📸 Screenshots
+
+### 🚀 Splash Screen
+![Splash Screen]<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/ceb2a388-3a95-443b-aaef-c5ad07a69787" />
+
+
+### 🔐 Login Screen
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/f05a4355-8fc9-4d9f-b7ef-874bef9c0be1" />
+
+### 📝 User Registration
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/6dc9ccc1-21be-4b96-b46a-ff4f78ee6b86" />
+
+
+### 🏠 User Home
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/4e82071b-d152-4123-bf0b-22e62006c1b1" />
+
+
+### 📁 My Projects
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/9008d373-2de3-466d-8de7-621fcacaed60" />
+
+
+### 🤝 Collaborations
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/ae2d6eff-f8d2-43da-a3e3-05eec88e3c23" />
+
+
+### 👤 User Profile
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/1acf8d25-56e6-4666-9215-dadc090dc59e" />
+
+
+### 🛡 Admin Login
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/f2018326-ed4f-4e68-9bd9-9b2d23a8ff5e" />
+
+### 🛠 Admin Panel (Dashboard Overview)
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/6685ef04-ebf4-46d5-a1e5-9ed8d16fdd38" />
+
+
+### 📝 Project Submitted / Project Details
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/205050e2-9510-4819-83fd-89cabc4aba81" />
+
+### 📊 Live Metrics (Admin)
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/ae2096f9-8942-42a9-befa-2fd9f110edac" />
+
+
+### 👥 Registered Users (Admin)
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/b6ddcd6c-a249-4330-8565-de89276889d7" />
+
+
+### 💬 Feedback Messages (Admin)
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/c27380d3-4fee-4285-ae44-92871feea212" />
+
 
 ---
 ## 🔮 Future Improvements
