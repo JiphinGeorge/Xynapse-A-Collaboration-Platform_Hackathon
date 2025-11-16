@@ -21,12 +21,7 @@ dependencies:
   lottie: ^3.3.2
   flutter_animate: ^4.5.0
   image_picker: ^1.0.7
-  image_cropper: ^5.0.1
-
-
-
-
-
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -41,11 +36,10 @@ flutter:
     - assets/animations/xynapse_loader.json
     - assets/animations/login_animation.json
     - assets/animations/register_animation.json
-# ---------------------------
-# 🧩 Flutter Launcher Icons
-# ---------------------------
+
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
   min_sdk_android: 21
+

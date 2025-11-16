@@ -13,7 +13,7 @@ class ProjectProvider extends ChangeNotifier {
   List<AppUser> users = [];
   List<Project> publicProjects = [];
 
-  int? currentUserId;  // nullable until user logs in
+  int? currentUserId; // nullable until user logs in
 
   // ---------------- INIT ----------------
   Future<void> init() async {
@@ -35,20 +35,19 @@ class ProjectProvider extends ChangeNotifier {
   }
 
   // ---------------- SET LOGIN ----------------
- Future<void> setCurrentUser(int id) async {
-  currentUserId = id;
+  Future<void> setCurrentUser(int id) async {
+    currentUserId = id;
 
-  final sp = await SharedPreferences.getInstance();
-  await sp.setInt('current_user', id);
+    final sp = await SharedPreferences.getInstance();
+    await sp.setInt('current_user', id);
 
-  // When logging out (id == 0), do NOT refreshAll()
-  if (id != 0) {
-    await refreshAll();
+    // When logging out (id == 0), do NOT refreshAll()
+    if (id != 0) {
+      await refreshAll();
+    }
+
+    notifyListeners();
   }
-
-  notifyListeners();
-}
-
 
   // ---------------- INITIAL LETTER ----------------
   String get currentUserInitial {
@@ -165,14 +164,18 @@ class ProjectProvider extends ChangeNotifier {
         .toList();
   }
 
-
   Future<void> updateUserImage(String newPath) async {
-  final uid = currentUserId;
-  if (uid == null) return;
+    final uid = currentUserId;
+    if (uid == null) return;
 
-  await _db.updateProfileImage(uid, newPath);
-  await _loadUsers();     // refresh user list
-  notifyListeners();
-}
+    await _db.updateProfileImage(uid, newPath);
 
+    // Reload users from database
+    await _loadUsers();
+
+    // Refresh EVERYTHING so images update in all screens
+    await refreshAll();
+
+    notifyListeners();
+  }
 }

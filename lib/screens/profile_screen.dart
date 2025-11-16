@@ -1,13 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
-
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:image_picker/image_picker.dart';
 import '../providers/project_provider.dart';
 import '../app_router.dart';
 import '../../db/db_helper.dart';
@@ -37,42 +33,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+  final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
 
-    if (picked == null) return;
+  if (picked == null) return;
 
-    /// ---- CIRCULAR CROP (image_cropper v5.0.1) ----
-    final cropped = await ImageCropper().cropImage(
-      sourcePath: picked.path,
-      cropStyle: CropStyle.circle,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      compressFormat: ImageCompressFormat.jpg,
-      compressQuality: 90,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Profile Photo',
-          toolbarColor: Colors.black,
-          toolbarWidgetColor: Colors.white,
-          hideBottomControls: true,
-          lockAspectRatio: true,
-        ),
-        IOSUiSettings(
-          title: 'Crop Profile Photo',
-          aspectRatioLockEnabled: true,
-        ),
-      ],
-    );
+  final prov = Provider.of<ProjectProvider>(context, listen: false);
+  await prov.updateUserImage(picked.path);
 
-    if (cropped == null) return;
-
-    final prov = Provider.of<ProjectProvider>(context, listen: false);
-    await prov.updateUserImage(cropped.path);
-
-    setState(() {});
-  }
-
-  /// LOGOUT DIALOG
+  setState(() {});
+}
+  // LOGOUT
+  // ----------------------------------------------------------
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -90,7 +61,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: const Text("Logout", style: TextStyle(color: Colors.red)),
+            child: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.redAccent),
+            ),
             onPressed: () async {
               Navigator.pop(context);
               final sp = await SharedPreferences.getInstance();
@@ -113,18 +87,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  /// INFO TILE
+  // ----------------------------------------------------------
+  // INFO TILE
+  // ----------------------------------------------------------
   Widget _infoTile(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(18),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white.withOpacity(0.06),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withOpacity(0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -157,6 +133,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ----------------------------------------------------------
+  // BUILD UI
+  // ----------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ProjectProvider>(context);
@@ -218,13 +197,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
 
-                /// BODY
+                // BODY
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        /// AVATAR
+                        // ---------------- AVATAR ----------------
                         GestureDetector(
                           onTap: _pickImage,
                           child: Container(
@@ -232,12 +211,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Colors.white.withOpacity(0.8),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
+                                  color: Colors.black.withOpacity(0.3),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
                                 ),
@@ -245,9 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.white.withValues(
-                                alpha: 0.12,
-                              ),
+                              backgroundColor: Colors.white.withOpacity(0.12),
                               backgroundImage:
                                   (user.profileImage != null &&
                                       user.profileImage!.isNotEmpty &&
@@ -277,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: Text(
                             "Change Photo",
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withOpacity(0.8),
                               fontSize: 15,
                               decoration: TextDecoration.underline,
                             ),
@@ -294,6 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+
                         Text(
                           user.email,
                           style: GoogleFonts.poppins(
@@ -321,7 +299,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         _glassButton(
                           text: "Send Feedback",
                           icon: Icons.feedback_outlined,
-                          onTap: () => _openFeedbackDialog(context, user.id!),
+                          onTap: () =>
+                              _openFeedbackDialog(context, user.id ?? 0),
                         ),
 
                         const SizedBox(height: 12),
@@ -355,9 +334,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: Colors.white.withOpacity(0.10),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -378,7 +357,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  /// FEEDBACK DIALOG
   void _openFeedbackDialog(BuildContext context, int userId) {
     final msgC = TextEditingController();
 
@@ -399,7 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             hintText: "Type your feedback...",
             hintStyle: const TextStyle(color: Colors.white54),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.07),
+            fillColor: Colors.white.withOpacity(0.07),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
           ),
         ),
@@ -416,7 +394,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               Navigator.pop(context);
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Feedback Submitted")),
+                const SnackBar(content: Text("Feedback submitted")),
               );
             },
             child: const Text(
