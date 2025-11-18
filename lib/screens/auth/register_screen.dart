@@ -30,7 +30,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isRegistering = false;
-  String _selectedRole = 'User';
+  
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
