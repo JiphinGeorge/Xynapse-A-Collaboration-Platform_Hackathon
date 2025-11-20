@@ -159,10 +159,8 @@ flutter run
 
 ### 🏠 User Home, My Projects & Collaborations
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/acca7b1c-6bc9-4557-bdb0-de1a184a4133" />
-" width="30%">
-  <img src="https://github.com/user-attachments/assets/76d434fc-0df1-4a9a-a3fd-64a2251e906f" />
- width="30%">
+  <img src="https://github.com/user-attachments/assets/acca7b1c-6bc9-4557-bdb0-de1a184a4133"  width="30%">
+  <img src="https://github.com/user-attachments/assets/76d434fc-0df1-4a9a-a3fd-64a2251e906f" width="30%">
   <img src="https://github.com/user-attachments/assets/ae2d6eff-f8d2-43da-a3e3-05eec88e3c23" width="30%">
 </p>
 
