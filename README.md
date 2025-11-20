@@ -159,8 +159,10 @@ flutter run
 
 ### 🏠 User Home, My Projects & Collaborations
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/4e82071b-d152-4123-bf0b-22e62006c1b1" width="30%">
-  <img src="https://github.com/user-attachments/assets/9008d373-2de3-466d-8de7-621fcacaed60" width="30%">
+  <img src="https://github.com/user-attachments/assets/acca7b1c-6bc9-4557-bdb0-de1a184a4133" />
+" width="30%">
+  <img src="https://github.com/user-attachments/assets/76d434fc-0df1-4a9a-a3fd-64a2251e906f" />
+ width="30%">
   <img src="https://github.com/user-attachments/assets/ae2d6eff-f8d2-43da-a3e3-05eec88e3c23" width="30%">
 </p>
 
@@ -173,7 +175,8 @@ flutter run
 
 ### 📝 Project Details, Metrics & Registered Users
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/205050e2-9510-4819-83fd-89cabc4aba81" width="30%">
+  <img src="https://github.com/user-attachments/assets/bf78cfae-367d-42cc-a576-33bf723e038e" />
+ width="30%">
   <img src="https://github.com/user-attachments/assets/ae2096f9-8942-42a9-befa-2fd9f110edac" width="30%">
  <img src="https://github.com/user-attachments/assets/804c3ca3-9a83-4dd3-9eed-1f8fff30bfe7"  width="30%">
 </p>
